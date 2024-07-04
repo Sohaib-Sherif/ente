@@ -1,0 +1,41 @@
+# fly.toml app configuration file generated for ente on 2024-07-03T22:35:02+02:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'ente'
+primary_region = 'ams'
+
+[build]
+
+[http_service]
+internal_port = 8080
+force_https = true
+auto_stop_machines = true
+auto_start_machines = true
+min_machines_running = 0
+processes = ['app']
+
+[[vm]]
+size = 'shared-cpu-1x'
+
+[env]
+ENTE_APPS_PUBLIC_ALBUMS = "https://albums.kanz.pictures"
+
+ENTE_DB_PORT = "6543"
+ENTE_DB_NAME = "postgres"
+ENTE_DB_SSLMODE = "require"
+ENTE_DB_USER = "postgres"
+
+ENTE_S3_B2_EU_CEN_ENDPOINT = "s3.eu-central-003.backblazeb2.com"
+ENTE_S3_B2_EU_CEN_REGION = "eu-central-003"
+ENTE_S3_B2_EU_CEN_BUCKET = "ente-photos-sohaib-ly"
+
+ENTE_WASABI_EU_CENTRAL_2_DERIVED_ENDPOINT = "s3.eu-central-003.backblazeb2.com"
+ENTE_WASABI_EU_CENTRAL_2_DERIVED_REGION = "eu-central-003"
+ENTE_WASABI_EU_CENTRAL_2_DERIVED_BUCKET = "ente-mldata-sohaib-ly"
+
+ENTE_SMTP_HOST = "smtp.resend.com"
+ENTE_SMTP_PORT = "465"
+ENTE_SMTP_USERNAME = "resend"
+ENTE_SMTP_EMAIL = "support@ente.sohaib.ly"

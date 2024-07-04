@@ -10,3 +10,4 @@ bin/**
 data/
 my-ente/
 __debug_bin*
+.env
