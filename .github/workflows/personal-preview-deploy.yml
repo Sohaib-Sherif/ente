@@ -1,19 +1,8 @@
-name: "Deploy preview (web)"
+name: "Personal Preview Deploy"
 
 on:
+    # Also allow manually running the workflow
     workflow_dispatch:
-        inputs:
-            app:
-                description: "App to build and deploy"
-                type: choice
-                required: true
-                default: "photos"
-                options:
-                    - "accounts"
-                    - "auth"
-                    - "cast"
-                    - "payments"
-                    - "photos"
 
 jobs:
     deploy:
@@ -39,12 +28,12 @@ jobs:
             - name: Install dependencies
               run: yarn install
 
-            - name: Build ${{ inputs.app }}
-              run: yarn build:${{ inputs.app }}
+            - name: Build photos
+              run: yarn build:photos
 
-            - name: Publish ${{ inputs.app }} to preview
+            - name: Publish photos
               uses: cloudflare/wrangler-action@v3
               with:
                   accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
                   apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-                  command: pages deploy --project-name=ente --commit-dirty=true --branch=preview web/apps/${{ inputs.app }}/out
+                  command: pages deploy --project-name=kanz --commit-dirty=true --branch=preview web/apps/photos/out
