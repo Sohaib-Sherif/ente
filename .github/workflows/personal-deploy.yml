@@ -36,6 +36,9 @@ jobs:
 
             - name: Publish photos
               uses: cloudflare/wrangler-action@v3
+              env:
+                NEXT_PUBLIC_ENTE_ENDPOINT: 'https://api.kanz.pictures'
+                NEXT_PUBLIC_ENTE_ALBUMS_ENDPOINT: 'https://albums.kanz.pictures'
               with:
                   accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
                   apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
