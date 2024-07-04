@@ -15,6 +15,7 @@ import 'package:photos/models/selected_files.dart';
 
 import "package:photos/ui/actions/file/file_actions.dart";
 import 'package:photos/ui/collections/collection_action_sheet.dart';
+import "package:photos/ui/viewer/file/panorama_viewer_screen.dart";
 import 'package:photos/utils/delete_file_util.dart';
 import "package:photos/utils/panorama_util.dart";
 import 'package:photos/utils/share_util.dart';
@@ -213,6 +214,20 @@ class FileBottomBarState extends State<FileBottomBar> {
         );
       },
     );
+  }
+
+  Future<void> openPanoramaViewerPage(EnteFile file) async {
+    final fetchedFile = await getFile(file);
+    if (fetchedFile == null) {
+      return;
+    }
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) {
+          return PanoramaViewerScreen(file: fetchedFile);
+        },
+      ),
+    ).ignore();
   }
 
   Future<void> _showSingleFileDeleteSheet(EnteFile file) async {
