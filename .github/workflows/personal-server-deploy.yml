@@ -25,3 +25,7 @@ jobs:
       - run: flyctl deploy --remote-only
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+          ENTE_S3_B2-EU-CEN_KEY: ${{ secrets.ENTE_S3_PRIMARY_KEY }}
+          ENTE_S3_B2-EU-CEN_SECRET: ${{ secrets.ENTE_S3_PRIMARY_SECRET }}
+          ENTE_S3_WASABI-EU-CENTRAL-2-DERIVED_KEY: ${{ secrets.ENTE_S3_MLDATA_KEY }}
+          ENTE_S3_WASABI-EU-CENTRAL-2-DERIVED_SECRET: ${{ secrets.ENTE_S3_MLDATA_SECRET }}
