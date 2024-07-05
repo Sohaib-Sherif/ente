@@ -4,6 +4,8 @@ on:
     push:
         branches: 
             - 'deploy'
+        paths: 
+            - 'web'
     # Also allow manually running the workflow
     workflow_dispatch:
 
