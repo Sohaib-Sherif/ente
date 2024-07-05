@@ -37,6 +37,6 @@ ENTE_WASABI_EU_CENTRAL_2_DERIVED_REGION = "eu-central-003"
 ENTE_WASABI_EU_CENTRAL_2_DERIVED_BUCKET = "ente-mldata-sohaib-ly"
 
 ENTE_SMTP_HOST = "smtp.resend.com"
-ENTE_SMTP_PORT = "465"
+ENTE_SMTP_PORT = "587"
 ENTE_SMTP_USERNAME = "resend"
 ENTE_SMTP_EMAIL = "support@ente.sohaib.ly"
