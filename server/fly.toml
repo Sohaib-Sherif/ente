@@ -20,6 +20,7 @@ processes = ['app']
 size = 'shared-cpu-1x'
 
 [env]
+ENTE_HTTP_USE_TLS = "false"
 ENTE_APPS_PUBLIC_ALBUMS = "https://albums.kanz.pictures"
 
 ENTE_DB_PORT = "6543"

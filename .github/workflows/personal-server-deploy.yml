@@ -4,6 +4,8 @@ on:
     push:
         branches: 
             - 'deploy'
+        paths: 
+            - 'server'
     # Also allow manually running the workflow
     workflow_dispatch:
 
