@@ -28,13 +28,18 @@ ENTE_DB_NAME = "postgres"
 ENTE_DB_SSLMODE = "require"
 ENTE_DB_USER = "postgres"
 
+ENTE_S3_HOT_STORAGE_PRIMARY = "b2-eu-cen"
+ENTE_S3_HOT_STORAGE_SECONDARY = "b2-eu-cen"
+
 ENTE_S3_B2_EU_CEN_ENDPOINT = "s3.eu-central-003.backblazeb2.com"
 ENTE_S3_B2_EU_CEN_REGION = "eu-central-003"
 ENTE_S3_B2_EU_CEN_BUCKET = "ente-photos-sohaib-ly"
 
-ENTE_WASABI_EU_CENTRAL_2_DERIVED_ENDPOINT = "s3.eu-central-003.backblazeb2.com"
-ENTE_WASABI_EU_CENTRAL_2_DERIVED_REGION = "eu-central-003"
-ENTE_WASABI_EU_CENTRAL_2_DERIVED_BUCKET = "ente-mldata-sohaib-ly"
+ENTE_S3_WASABI_EU_CENTRAL_2_DERIVED_ENDPOINT = "s3.eu-central-003.backblazeb2.com"
+ENTE_S3_WASABI_EU_CENTRAL_2_DERIVED_REGION = "eu-central-003"
+ENTE_S3_WASABI_EU_CENTRAL_2_DERIVED_BUCKET = "ente-mldata-sohaib-ly"
+
+ENTE_S3_DERIVED_STORAGE = 'wasabi-eu-central-2-derived'
 
 ENTE_SMTP_HOST = "smtp.resend.com"
 ENTE_SMTP_PORT = "587"
