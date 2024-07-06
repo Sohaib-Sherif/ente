@@ -46,17 +46,6 @@ class LocalSettings {
     await _prefs.setInt(kPhotoGridSize, value);
   }
 
-  bool hasEnabledMagicSearch() {
-    if (_prefs.containsKey(kEnableMagicSearch)) {
-      return _prefs.getBool(kEnableMagicSearch)!;
-    }
-    return false;
-  }
-
-  Future<void> setShouldEnableMagicSearch(bool value) async {
-    await _prefs.setBool(kEnableMagicSearch, value);
-  }
-
   int getRateUsShownCount() {
     if (_prefs.containsKey(kRateUsShownCount)) {
       return _prefs.getInt(kRateUsShownCount)!;
@@ -76,17 +65,6 @@ class LocalSettings {
   bool get isFaceIndexingEnabled =>
       _prefs.getBool(kEnableFaceIndexing) ?? false;
 
-  bool get userEnabledMultiplePart =>
-      _prefs.getBool(kEnableMultiplePart) ?? false;
-
-  Future<bool> setUserEnabledMultiplePart(bool value) async {
-    await _prefs.setBool(kEnableMultiplePart, value);
-    return value;
-  }
-
-  bool get isFaceClusteringEnabled =>
-      _prefs.getBool(kEnableFaceIndexing) ?? false;
-
   /// toggleFaceIndexing toggles the face indexing setting and returns the new value
   Future<bool> toggleFaceIndexing() async {
     await _prefs.setBool(kEnableFaceIndexing, !isFaceIndexingEnabled);
@@ -101,9 +79,4 @@ class LocalSettings {
   }
   //#endregion
 
-  /// toggleFaceClustering toggles the face clustering setting and returns the new value
-  Future<bool> toggleFaceClustering() async {
-    await _prefs.setBool(kEnableFaceClustering, !isFaceClusteringEnabled);
-    return isFaceClusteringEnabled;
-  }
 }
