@@ -1253,47 +1253,5 @@
   "right": "Rechts",
   "whatsNew": "Neue Funktionen",
   "reviewSuggestions": "Vorschläge überprüfen",
-  "useAsCover": "Als Titelbild festlegen",
-  "notPersonLabel": "Nicht {name}?",
-  "@notPersonLabel": {
-    "description": "Label to indicate that the person in the photo is not the person whose name is mentioned",
-    "placeholders": {
-      "name": {
-        "content": "{name}",
-        "type": "String"
-      }
-    }
-  },
-  "panorama": "Panorama",
-  "reenterPassword": "Passwort erneut eingeben",
-  "reenterPin": "PIN erneut eingeben",
-  "deviceLock": "Gerätsperre",
-  "pinLock": "PIN-Sperre",
-  "next": "Weiter",
-  "setNewPassword": "Neues Passwort festlegen",
-  "enterPin": "PIN eingeben",
-  "setNewPin": "Neue PIN festlegen",
-  "appLock": "App-Sperre",
-  "noSystemLockFound": "Keine Systemsperre gefunden",
-  "toEnableAppLockPleaseSetupDevicePasscodeOrScreen": "Um die App-Sperre zu aktivieren, konfigurieren Sie bitte den Gerätepasscode oder die Bildschirmsperre in Ihren Systemeinstellungen.",
-  "tapToUnlock": "Zum Entsperren antippen",
-  "tooManyIncorrectAttempts": "Zu viele fehlerhafte Versuche",
-  "videoInfo": "Video-Informationen",
-  "appLockDescription": "Wähle zwischen dem Standard-Sperrbildschirm deines Gerätes und einem eigenen Sperrbildschirm mit PIN oder Passwort.",
-  "autoLock": "Automatisches Sperren",
-  "immediately": "Sofort",
-  "autoLockFeatureDescription": "Zeit, nach der die App gesperrt wird, nachdem sie in den Hintergrund verschoben wurde",
-  "hideContent": "Inhalte verstecken",
-  "hideContentDescriptionAndroid": "Versteckt Inhalte der App beim Wechseln zwischen Apps und deaktiviert Screenshots",
-  "hideContentDescriptionIos": "Versteckt Inhalte der App beim Wechseln zwischen Apps",
-  "passwordStrengthInfo": "Die Berechnung der Stärke des Passworts basiert auf dessen Länge, den verwendeten Zeichen, und ob es in den 10.000 am häufigsten verwendeten Passwörtern vorkommt",
-  "noQuickLinksSelected": "Keine schnellen Links ausgewählt",
-  "pleaseSelectQuickLinksToRemove": "Bitte wähle die zu entfernenden schnellen Links",
-  "removePublicLinks": "Öffentliche Links entfernen",
-  "thisWillRemovePublicLinksOfAllSelectedQuickLinks": "Hiermit werden die öffentlichen Links aller ausgewählten schnellen Links entfernt.",
-  "guestView": "Gastansicht",
-  "guestViewEnablePreSteps": "Bitte richte einen Gerätepasscode oder eine Bildschirmsperre ein, um die Gastansicht zu nutzen.",
-  "nameTheAlbum": "Name the album",
-  "collectPhotosDescription": "Create a link where your friends can upload photos in original quality.",
-  "collect": "Collect"
+  "mlFunctions": "ML functions"
 }

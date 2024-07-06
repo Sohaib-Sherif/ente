@@ -972,37 +972,8 @@ class MessageLookup extends MessageLookupByLibrary {
             "Spowoduje to wysyłanie logów, aby pomóc nam w debugowaniu twojego problemu. Pamiętaj, że nazwy plików zostaną dołączone, aby pomóc w śledzeniu problemów z określonymi plikami."),
         "longPressAnEmailToVerifyEndToEndEncryption":
             MessageLookupByLibrary.simpleMessage(
-                "Naciśnij i przytrzymaj e-mail, aby zweryfikować szyfrowanie end-to-end."),
-        "longpressOnAnItemToViewInFullscreen":
-            MessageLookupByLibrary.simpleMessage(
-                "Długo naciśnij element, aby wyświetlić go na pełnym ekranie"),
-        "lostDevice":
-            MessageLookupByLibrary.simpleMessage("Utracono urządzenie?"),
-        "machineLearning":
-            MessageLookupByLibrary.simpleMessage("Uczenie maszynowe"),
-        "magicSearch":
-            MessageLookupByLibrary.simpleMessage("Magiczne wyszukiwanie"),
-        "manage": MessageLookupByLibrary.simpleMessage("Zarządzaj"),
-        "manageDeviceStorage": MessageLookupByLibrary.simpleMessage(
-            "Zarządzaj pamięcią urządzenia"),
-        "manageFamily":
-            MessageLookupByLibrary.simpleMessage("Zarządzaj Rodziną"),
-        "manageLink": MessageLookupByLibrary.simpleMessage("Zarządzaj linkiem"),
-        "manageParticipants": MessageLookupByLibrary.simpleMessage("Zarządzaj"),
-        "manageSubscription":
-            MessageLookupByLibrary.simpleMessage("Zarządzaj subskrypcją"),
-        "manualPairDesc": MessageLookupByLibrary.simpleMessage(
-            "Parowanie PIN-em działa z każdym ekranem, na którym chcesz wyświetlić swój album."),
-        "map": MessageLookupByLibrary.simpleMessage("Mapa"),
-        "maps": MessageLookupByLibrary.simpleMessage("Mapy"),
-        "mastodon": MessageLookupByLibrary.simpleMessage("Mastodon"),
-        "matrix": MessageLookupByLibrary.simpleMessage("Matrix"),
-        "memoryCount": m34,
-        "merchandise": MessageLookupByLibrary.simpleMessage("Sklep"),
-        "mlIndexingDescription": MessageLookupByLibrary.simpleMessage(
-            "Pamiętaj, że uczenie maszynowe spowoduje większe zużycie przepustowości i baterii, dopóki wszystkie elementy zostaną zindeksowane."),
-        "mobileWebDesktop": MessageLookupByLibrary.simpleMessage(
-            "Aplikacja Mobilna, Strona Internetowa, Komputer"),
+                "Long press an email to verify end to end encryption."),
+        "mlFunctions": MessageLookupByLibrary.simpleMessage("ML functions"),
         "moderateStrength": MessageLookupByLibrary.simpleMessage("Umiarkowana"),
         "modifyYourQueryOrTrySearchingFor":
             MessageLookupByLibrary.simpleMessage(

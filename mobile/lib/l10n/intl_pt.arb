@@ -1253,47 +1253,5 @@
   "right": "Direita",
   "whatsNew": "O que há de novo",
   "reviewSuggestions": "Revisar sugestões",
-  "useAsCover": "Usar como capa",
-  "notPersonLabel": "Não é {name}?",
-  "@notPersonLabel": {
-    "description": "Label to indicate that the person in the photo is not the person whose name is mentioned",
-    "placeholders": {
-      "name": {
-        "content": "{name}",
-        "type": "String"
-      }
-    }
-  },
-  "panorama": "Panorama",
-  "reenterPassword": "Reinserir senha",
-  "reenterPin": "Reinserir PIN",
-  "deviceLock": "Bloqueio do dispositivo",
-  "pinLock": "Bloqueio PIN",
-  "next": "Próximo",
-  "setNewPassword": "Defina nova senha",
-  "enterPin": "Insira o PIN",
-  "setNewPin": "Definir novo PIN",
-  "appLock": "Bloqueio de app",
-  "noSystemLockFound": "Nenhum bloqueio de sistema encontrado",
-  "toEnableAppLockPleaseSetupDevicePasscodeOrScreen": "Para ativar o bloqueio de app, por favor ative um método de autenticação nas configurações do sistema do seu dispositivo.",
-  "tapToUnlock": "Toque para desbloquear",
-  "tooManyIncorrectAttempts": "Muitas tentativas incorretas",
-  "videoInfo": "Informação de Vídeo",
-  "appLockDescription": "Escolha entre a tela de bloqueio padrão do seu dispositivo e uma tela de bloqueio personalizada com PIN ou senha.",
-  "autoLock": "Bloqueio automático",
-  "immediately": "Imediatamente",
-  "autoLockFeatureDescription": "Tempo após o qual o app bloqueia depois de ser colocado em segundo plano",
-  "hideContent": "Ocultar conteúdo",
-  "hideContentDescriptionAndroid": "Oculta o conteúdo do app no seletor de apps e desativa as capturas de tela",
-  "hideContentDescriptionIos": "Oculta o conteúdo do seletor de apps",
-  "passwordStrengthInfo": "Força da senha é calculada considerando o comprimento da senha, caracteres usados, e se a senha aparece ou não nas 10.000 senhas mais usadas",
-  "noQuickLinksSelected": "Nenhum link rápido selecionado",
-  "pleaseSelectQuickLinksToRemove": "Selecione links rápidos para remover",
-  "removePublicLinks": "Remover link público",
-  "thisWillRemovePublicLinksOfAllSelectedQuickLinks": "Isto removerá links públicos de todos os links rápidos selecionados.",
-  "guestView": "Visão de convidado",
-  "guestViewEnablePreSteps": "Para ativar a visão de convidado, por favor ative um método de autenticação nas configurações do sistema do seu dispositivo.",
-  "nameTheAlbum": "Name the album",
-  "collectPhotosDescription": "Create a link where your friends can upload photos in original quality.",
-  "collect": "Collect"
+  "mlFunctions": "ML functions"
 }
