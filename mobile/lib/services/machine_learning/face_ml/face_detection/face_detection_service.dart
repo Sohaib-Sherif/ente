@@ -140,8 +140,17 @@ class FaceDetectionService extends MlModel {
       inputImageList,
       "YOLO_FACE",
     );
-
-    return relativeDetections;
+    final List<List<List<double>>> reconstructedTensor = [];
+    for (int i = 0; i < result!.length; i += 25200 * 16) {
+      final List<List<double>> outerArray = [];
+      for (int j = 0; j < 25200; j++) {
+        final List<double> innerArray =
+            result.sublist(i + j * 16, i + (j + 1) * 16).cast<double>();
+        outerArray.add(innerArray);
+      }
+      reconstructedTensor.add(outerArray);
+    }
+    return reconstructedTensor;
   }
 
   static List<FaceDetectionRelative> _yoloPostProcessOutputs(
