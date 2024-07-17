@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	b64 "encoding/base64"
 	"fmt"
-	"github.com/ente-io/museum/pkg/controller/file_copy"
 	"net/http"
 	"os"
 	"os/signal"
@@ -14,6 +13,8 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/ente-io/museum/pkg/controller/file_copy"
 
 	"github.com/ente-io/museum/pkg/repo/two_factor_recovery"
 
@@ -90,6 +91,22 @@ func main() {
 
 	setupLogger(environment)
 	log.Infof("Booting up %s server with commit #%s", environment, os.Getenv("GIT_COMMIT"))
+
+	log.Println("Keys of env: ")
+	log.Println(viper.AllKeys())
+	db_connection := fmt.Sprintf("host=%s port=%d user=%s "+
+		"password=%s dbname=%s sslmode=%s",
+		viper.GetString("db.host"),
+		viper.GetInt("db.port"),
+		viper.GetString("db.user"),
+		viper.GetString("db.password"),
+		viper.GetString("db.name"),
+		viper.GetString("db.sslmode"))
+
+	log.Println(db_connection)
+	log.Println(viper.Get("db.host"))
+	log.Println(viper.Get("db.password"))
+	log.Println(viper.Get("db.port"))
 
 	secretEncryptionKey := viper.GetString("key.encryption")
 	hashingKey := viper.GetString("key.hash")
@@ -763,6 +780,7 @@ func setupLogger(environment string) {
 }
 
 func setupDatabase() *sql.DB {
+
 	log.Println("Setting up db")
 	db, err := sql.Open("postgres", config.GetPGInfo())
 
