@@ -18,7 +18,7 @@ module.exports = {
         "style-src": "'self' 'unsafe-inline'",
         "font-src ": "'self'; script-src 'self' 'unsafe-eval' blob:",
         "connect-src":
-            "'self' https://*.kanz.pictures http://localhost:8080 data: blob: ws://localhost:3000/",
+            "'self' https://*.kanz.pictures http://localhost:8080 data: blob: https://ente-photos-sohaib-ly.s3.eu-central-003.backblazeb2.com https://ente-mldata-sohaib-ly.s3.eu-central-003.backblazeb2.com ws://localhost:3000/",
         "base-uri ": "'self'",
         // to allow worker
         "child-src": "'self' blob:",
