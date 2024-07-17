@@ -20,29 +20,28 @@ processes = ['app']
 size = 'shared-cpu-1x'
 
 [env]
-ENTE_HTTP_USE-TLS = "false"
-ENTE_APPS_PUBLIC-ALBUMS = "https://albums.kanz.pictures"
+ENTE_HTTP__USE_TLS = "false"
+ENTE_APPS__PUBLIC_ALBUMS = "https://albums.kanz.pictures"
 
-ENTE_DB_PORT = "5432"
-ENTE_DB_NAME = "postgres"
-ENTE_DB_SSLMODE = "require"
-ENTE_DB_USER = "postgres"
+ENTE_DB__PORT = "5432"
+ENTE_DB__NAME = "postgres"
+ENTE_DB__SSLMODE = "require"
+ENTE_DB__USER = "postgres"
 
-# Moved to production.yml because of naming conflict with viper
-# ENTE_S3_HOT_STORAGE_PRIMARY = "b2-eu-cen"
-# ENTE_S3_HOT_STORAGE_SECONDARY = "b2-eu-cen"
+ENTE_S3__HOT_STORAGE__PRIMARY = "b2-eu-cen"
+ENTE_S3__HOT_STORAGE__SECONDARY = "b2-eu-cen"
 
-ENTE_S3_B2-EU-CEN_ENDPOINT = "s3.eu-central-003.backblazeb2.com"
-ENTE_S3_B2-EU-CEN_REGION = "eu-central-003"
-ENTE_S3_B2-EU-CEN_BUCKET = "ente-photos-sohaib-ly"
+ENTE_S3__B2_EU_CEN__ENDPOINT = "s3.eu-central-003.backblazeb2.com"
+ENTE_S3__B2_EU_CEN__REGION = "eu-central-003"
+ENTE_S3__B2_EU_CEN__BUCKET = "ente-photos-sohaib-ly"
 
-ENTE_S3_WASABI-EU-CENTRAL-2-DERIVED_ENDPOINT = "s3.eu-central-003.backblazeb2.com"
-ENTE_S3_WASABI-EU-CENTRAL-2-DERIVED_REGION = "eu-central-003"
-ENTE_S3_WASABI-EU-CENTRAL-2-DERIVED_BUCKET = "ente-mldata-sohaib-ly"
+ENTE_S3__WASABI_EU_CENTRAL_2_DERIVED__ENDPOINT = "s3.eu-central-003.backblazeb2.com"
+ENTE_S3__WASABI_EU_CENTRAL_2_DERIVED__REGION = "eu-central-003"
+ENTE_S3__WASABI_EU_CENTRAL_2_DERIVED__BUCKET = "ente-mldata-sohaib-ly"
 
-ENTE_S3_DERIVED-STORAGE = 'wasabi-eu-central-2-derived'
+ENTE_S3__DERIVED_STORAGE = 'wasabi-eu-central-2-derived'
 
-ENTE_SMTP_HOST = "smtp.resend.com"
-ENTE_SMTP_PORT = "587"
-ENTE_SMTP_USERNAME = "resend"
-ENTE_SMTP_EMAIL = "no-reply@emails.kanz.pictures"
+ENTE_SMTP__HOST = "smtp.resend.com"
+ENTE_SMTP__PORT = "587"
+ENTE_SMTP__USERNAME = "resend"
+ENTE_SMTP__EMAIL = "no-reply@emails.kanz.pictures"
