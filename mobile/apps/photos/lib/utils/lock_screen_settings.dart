@@ -61,12 +61,12 @@ class LockScreenSettings {
     return _preferences.getBool(keyHideAppContent) ?? false;
   }
 
-  Future<void> setAutoLockTime(Duration duration) async {
-    await _preferences.setInt(autoLockTime, duration.inMilliseconds);
+  Future<void> shouldShowAppContent(bool show) async {
+    await _preferences.setBool(keyShowAppContent, show);
   }
 
-  int getAutoLockTime() {
-    return _preferences.getInt(autoLockTime) ?? 5000;
+  bool getShowAppContent() {
+    return _preferences.getBool(keyShowAppContent) ?? true;
   }
 
   Future<void> setLastInvalidAttemptTime(int time) async {
