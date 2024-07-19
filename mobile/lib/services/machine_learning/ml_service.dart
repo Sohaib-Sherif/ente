@@ -23,8 +23,8 @@ import 'package:photos/services/machine_learning/face_ml/face_embedding/face_emb
 import 'package:photos/services/machine_learning/face_ml/face_filtering/face_filtering_constants.dart';
 import "package:photos/services/machine_learning/face_ml/face_recognition_service.dart";
 import "package:photos/services/machine_learning/face_ml/person/person_service.dart";
-import 'package:photos/services/machine_learning/file_ml/file_ml.dart';
-import 'package:photos/services/machine_learning/file_ml/remote_fileml_service.dart';
+import "package:photos/services/machine_learning/file_ml/file_ml.dart";
+import "package:photos/services/machine_learning/file_ml/remote_fileml_service.dart";
 import 'package:photos/services/machine_learning/ml_exceptions.dart';
 import "package:photos/services/machine_learning/ml_indexing_isolate.dart";
 import 'package:photos/services/machine_learning/ml_result.dart';
@@ -455,15 +455,23 @@ class MLService {
         if (!result.errorOccured) {
           await RemoteFileMLService.instance.putFileEmbedding(
             instruction.enteFile,
-            FileMl(
+            RemoteFileML(
               instruction.enteFile.uploadedFileID!,
-              FaceEmbeddings(
+              {},
+              faceEmbedding: RemoteFaceEmbedding(
                 faces,
                 result.mlVersion,
                 client: client,
+                height: result.decodedImageSize.height,
+                width: result.decodedImageSize.width,
               ),
-              height: result.decodedImageSize.height,
-              width: result.decodedImageSize.width,
+              clipEmbedding: result.clipRan
+                  ? RemoteClipEmbedding(
+                      result.clip!.embedding,
+                      version: result.mlVersion,
+                      client: client,
+                    )
+                  : null,
             ),
           );
         } else {
@@ -472,7 +480,6 @@ class MLService {
           );
         }
         await FaceMLDataDB.instance.bulkInsertFaces(faces);
-        return actuallyRanML;
       }
 
       if (result.clipRan) {
