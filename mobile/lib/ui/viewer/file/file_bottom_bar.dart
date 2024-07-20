@@ -48,6 +48,7 @@ class FileBottomBar extends StatefulWidget {
 class FileBottomBarState extends State<FileBottomBar> {
   final GlobalKey shareButtonKey = GlobalKey();
   bool _isFileSwipeLocked = false;
+
   @override
   void initState() {
     super.initState();
@@ -66,7 +67,7 @@ class FileBottomBarState extends State<FileBottomBar> {
   @override
   Widget build(BuildContext context) {
     return _isFileSwipeLocked
-        ? IgnorePointer(child: Container())
+        ? const IgnorePointer(child: SizedBox.shrink())
         : _getBottomBar();
   }
 
