@@ -1,8 +1,11 @@
+import "dart:async";
 import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import "package:logging/logging.dart";
+import "package:photos/core/event_bus.dart";
+import "package:photos/events/file_swipe_lock_event.dart";
 import "package:photos/generated/l10n.dart";
 import "package:photos/models/file/extensions/file_props.dart";
 import 'package:photos/models/file/file.dart';
@@ -44,21 +47,27 @@ class FileBottomBar extends StatefulWidget {
 
 class FileBottomBarState extends State<FileBottomBar> {
   final GlobalKey shareButtonKey = GlobalKey();
-  bool isPanorama = false;
-  int? lastFileGenID;
-
+  bool _isFileSwipeLocked = false;
   @override
   void initState() {
     super.initState();
+    Bus.instance.on<FileSwipeLockEvent>().listen((event) {
+      setState(() {
+        _isFileSwipeLocked = event.shouldSwipeLock;
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    if (flagService.internalUser) {
-      isPanorama = widget.file.isPanorama() ?? false;
-      _checkPanorama();
-    }
-    return _getBottomBar();
+    return _isFileSwipeLocked
+        ? IgnorePointer(child: Container())
+        : _getBottomBar();
   }
 
   // _checkPanorama() method is used to check if the file is a panorama image.
@@ -202,7 +211,7 @@ class FileBottomBarState extends State<FileBottomBar> {
       valueListenable: widget.enableFullScreenNotifier,
       builder: (BuildContext context, bool isFullScreen, _) {
         return IgnorePointer(
-          ignoring: isFullScreen,
+          ignoring: isFullScreen || _isFileSwipeLocked,
           child: AnimatedOpacity(
             opacity: isFullScreen ? 0 : 1,
             duration: const Duration(milliseconds: 150),
