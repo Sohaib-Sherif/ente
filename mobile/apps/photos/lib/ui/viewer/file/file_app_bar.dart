@@ -296,7 +296,6 @@ class FileAppBarState extends State<FileAppBar> {
         );
       }
     }
-
     items.add(
       PopupMenuItem(
         value: 6,
