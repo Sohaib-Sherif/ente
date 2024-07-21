@@ -13,7 +13,6 @@ import "package:photos/ui/settings/lock_screen/lock_screen_password.dart";
 import "package:photos/ui/settings/lock_screen/lock_screen_pin.dart";
 import "package:photos/ui/tools/app_lock.dart";
 import "package:photos/utils/lock_screen_settings.dart";
-import "package:secure_app_switcher/secure_app_switcher.dart";
 
 class LockScreenOptions extends StatefulWidget {
   const LockScreenOptions({super.key});
@@ -32,7 +31,7 @@ class _LockScreenOptionsState extends State<LockScreenOptions> {
   @override
   void initState() {
     super.initState();
-    showAppContent = _lockscreenSetting.getShowAppContent();
+    showAppContent = _lockscreenSetting.getShouldShowAppContent();
     _initializeSettings();
     appLock = isPinEnabled ||
         isPasswordEnabled ||
@@ -42,9 +41,12 @@ class _LockScreenOptionsState extends State<LockScreenOptions> {
   Future<void> _initializeSettings() async {
     final bool passwordEnabled = await _lockscreenSetting.isPasswordSet();
     final bool pinEnabled = await _lockscreenSetting.isPinSet();
+    final bool shouldShowAppContent =
+        _lockscreenSetting.getShouldShowAppContent();
     setState(() {
       isPasswordEnabled = passwordEnabled;
       isPinEnabled = pinEnabled;
+      showAppContent = shouldShowAppContent;
     });
   }
 
@@ -104,6 +106,9 @@ class _LockScreenOptionsState extends State<LockScreenOptions> {
     AppLock.of(context)!.setEnabled(!appLock);
     await _configuration.setSystemLockScreen(!appLock);
     await _lockscreenSetting.removePinAndPassword();
+    if (appLock == true) {
+      await _lockscreenSetting.shouldShowAppContent(isContentVisible: true);
+    }
     setState(() {
       _initializeSettings();
       appLock = !appLock;
@@ -114,9 +119,8 @@ class _LockScreenOptionsState extends State<LockScreenOptions> {
     setState(() {
       showAppContent = !showAppContent;
     });
-    showAppContent ? SecureAppSwitcher.off() : SecureAppSwitcher.on();
     await _lockscreenSetting.shouldShowAppContent(
-      showAppContent,
+      isContentVisible: showAppContent,
     );
   }
 
