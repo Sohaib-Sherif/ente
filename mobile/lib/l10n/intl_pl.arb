@@ -1278,5 +1278,6 @@
   "toEnableAppLockPleaseSetupDevicePasscodeOrScreen": "Aby włączyć blokadę aplikacji, należy skonfigurować hasło urządzenia lub blokadę ekranu w ustawieniach systemu.",
   "tapToUnlock": "Naciśnij, aby odblokować",
   "tooManyIncorrectAttempts": "Zbyt wiele błędnych prób",
-  "videoInfo": "Informacje Wideo"
+  "appLockDescription": "Choose between your device\\'s default lock screen and a custom lock screen with a PIN or password.",
+  "swipeLockEnablePreSteps": "To enable swipe lock, please setup device passcode or screen lock in your system settings."
 }
