@@ -44,7 +44,7 @@ class SemanticSearchService {
   bool _hasInitialized = false;
   bool _textModelIsLoaded = false;
   bool _isSyncing = false;
-  List<Embedding> _cachedImageEmbeddings = <Embedding>[];
+  List<ClipEmbedding> _cachedImageEmbeddings = <ClipEmbedding>[];
   Future<(String, List<EnteFile>)>? _searchScreenRequest;
   String? _latestPendingQuery;
 
@@ -275,15 +275,16 @@ class SemanticSearchService {
     ClipResult clipResult,
     EnteFile entefile,
   ) async {
-    final embedding = Embedding(
+    final embedding = ClipEmbedding(
       fileID: clipResult.fileID,
       embedding: clipResult.embedding,
+      version: clipMlVersion,
     );
     await EmbeddingsDB.instance.put(embedding);
   }
 
   static Future<void> storeEmptyClipImageResult(EnteFile entefile) async {
-    final embedding = Embedding.empty(entefile.uploadedFileID!);
+    final embedding = ClipEmbedding.empty(entefile.uploadedFileID!);
     await EmbeddingsDB.instance.put(embedding);
   }
 
@@ -364,7 +365,7 @@ class SemanticSearchService {
 
 List<QueryResult> computeBulkSimilarities(Map args) {
   final queryResults = <QueryResult>[];
-  final imageEmbeddings = args["imageEmbeddings"] as List<Embedding>;
+  final imageEmbeddings = args["imageEmbeddings"] as List<ClipEmbedding>;
   final textEmbedding = args["textEmbedding"] as List<double>;
   final minimumSimilarity = args["minimumSimilarity"] ??
       SemanticSearchService.kMinimumSimilarityThreshold;
