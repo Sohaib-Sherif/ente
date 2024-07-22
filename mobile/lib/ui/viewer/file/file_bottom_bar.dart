@@ -48,11 +48,14 @@ class FileBottomBar extends StatefulWidget {
 class FileBottomBarState extends State<FileBottomBar> {
   final GlobalKey shareButtonKey = GlobalKey();
   bool _isFileSwipeLocked = false;
+  late final StreamSubscription<FileSwipeLockEvent>
+      _fileSwipeLockEventSubscription;
 
   @override
   void initState() {
     super.initState();
-    Bus.instance.on<FileSwipeLockEvent>().listen((event) {
+    _fileSwipeLockEventSubscription =
+        Bus.instance.on<FileSwipeLockEvent>().listen((event) {
       setState(() {
         _isFileSwipeLocked = event.shouldSwipeLock;
       });
@@ -61,14 +64,13 @@ class FileBottomBarState extends State<FileBottomBar> {
 
   @override
   void dispose() {
+    _fileSwipeLockEventSubscription.cancel();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return _isFileSwipeLocked
-        ? const IgnorePointer(child: SizedBox.shrink())
-        : _getBottomBar();
+    return _isFileSwipeLocked ? Container() : _getBottomBar();
   }
 
   // _checkPanorama() method is used to check if the file is a panorama image.
