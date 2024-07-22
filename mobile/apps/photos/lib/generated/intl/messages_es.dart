@@ -1990,13 +1990,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "syncProgress": m97,
         "syncStopped":
             MessageLookupByLibrary.simpleMessage("Sincronización detenida"),
-        "syncing": MessageLookupByLibrary.simpleMessage("Sincronizando..."),
         "systemTheme": MessageLookupByLibrary.simpleMessage("Sistema"),
-        "tapToCopy": MessageLookupByLibrary.simpleMessage("toca para copiar"),
-        "tapToEnterCode": MessageLookupByLibrary.simpleMessage(
-            "Toca para introducir el código"),
-        "tapToUnlock":
-            MessageLookupByLibrary.simpleMessage("Toca para desbloquear"),
         "tapToUpload": MessageLookupByLibrary.simpleMessage("Toca para subir"),
         "tapToUploadIsIgnoredDue": m98,
         "tempErrorContactSupportIfPersists": MessageLookupByLibrary.simpleMessage(
