@@ -9637,6 +9637,16 @@ class S {
     );
   }
 
+  /// `To enable app lock, please setup device passcode or screen lock in your system settings.`
+  String get toEnableAppLockPleaseSetupDevicePasscodeOrScreen {
+    return Intl.message(
+      'To enable app lock, please setup device passcode or screen lock in your system settings.',
+      name: 'toEnableAppLockPleaseSetupDevicePasscodeOrScreen',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Tap to unlock`
   String get tapToUnlock {
     return Intl.message(
