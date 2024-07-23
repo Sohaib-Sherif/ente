@@ -38,8 +38,8 @@ class FileBottomBar extends StatefulWidget {
     required this.onFileRemoved,
     required this.enableFullScreenNotifier,
     this.userID,
-    Key? key,
-  }) : super(key: key);
+    super.key,
+  });
 
   @override
   FileBottomBarState createState() => FileBottomBarState();
@@ -70,7 +70,11 @@ class FileBottomBarState extends State<FileBottomBar> {
 
   @override
   Widget build(BuildContext context) {
-    return _isFileSwipeLocked ? Container() : _getBottomBar();
+    if (flagService.internalUser) {
+      isPanorama = widget.file.isPanorama() ?? false;
+      _checkPanorama();
+    }
+    return _getBottomBar();
   }
 
   // _checkPanorama() method is used to check if the file is a panorama image.
@@ -216,8 +220,9 @@ class FileBottomBarState extends State<FileBottomBar> {
         return IgnorePointer(
           ignoring: isFullScreen || _isFileSwipeLocked,
           child: AnimatedOpacity(
-            opacity: isFullScreen ? 0 : 1,
-            duration: const Duration(milliseconds: 150),
+            opacity: isFullScreen || _isFileSwipeLocked ? 0 : 1,
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeInOut,
             child: Align(
               alignment: Alignment.bottomCenter,
               child: Container(
