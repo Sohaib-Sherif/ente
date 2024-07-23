@@ -92,9 +92,6 @@ class FaceRecognitionService {
     final List<FileMLInstruction> filesToIndex = await getFilesForMlIndexing();
     final List<List<FileMLInstruction>> chunks =
         filesToIndex.chunks(_embeddingFetchLimit); // Chunks of 200
-    int fetchedCount = 0;
-    int filesIndexedForFaces = 0;
-    int filesIndexedForClip = 0;
     for (final chunk in chunks) {
       try {
         final fileIds = chunk
@@ -104,7 +101,6 @@ class FaceRecognitionService {
         final res =
             await RemoteFileMLService.instance.getFileEmbeddings(fileIds);
         _logger.info('fetched ${res.mlData.length} embeddings');
-        fetchedCount += res.mlData.length;
         final List<Face> faces = [];
         final List<ClipEmbedding> clipEmbeddings = [];
         for (RemoteFileML fileMl in res.mlData.values) {
@@ -155,32 +151,6 @@ class FaceRecognitionService {
         }
       }
     }
-  }
-
-  // Returns a list of faces from the given remote fileML. null if the version is less than the current version
-  // or if the remote faceEmbedding is null.
-  List<Face>? _getFacesFromRemoteEmbedding(RemoteFileML fileMl) {
-    final RemoteFaceEmbedding? remoteFaceEmbedding = fileMl.faceEmbedding;
-    if (shouldDiscardRemoteEmbedding(fileMl)) {
-      return null;
-    }
-    final List<Face> faces = [];
-    if (remoteFaceEmbedding!.faces.isEmpty) {
-      faces.add(
-        Face.empty(
-          fileMl.fileID,
-        ),
-      );
-    } else {
-      for (final f in remoteFaceEmbedding.faces) {
-        f.fileInfo = FileInfo(
-          imageHeight: remoteFaceEmbedding.height,
-          imageWidth: remoteFaceEmbedding.width,
-        );
-        faces.add(f);
-      }
-    }
-    return faces;
   }
 
   static Future<List<FaceResult>> runFacesPipeline(
