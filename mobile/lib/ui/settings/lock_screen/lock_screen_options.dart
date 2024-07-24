@@ -33,7 +33,7 @@ class _LockScreenOptionsState extends State<LockScreenOptions> {
   @override
   void initState() {
     super.initState();
-    hideAppContent = _lockscreenSetting.getShouldShowAppContent();
+    autoLockTimeInMilliseconds = _lockscreenSetting.getAutoLockTime();
     _initializeSettings();
     appLock = isPinEnabled ||
         isPasswordEnabled ||
@@ -43,12 +43,10 @@ class _LockScreenOptionsState extends State<LockScreenOptions> {
   Future<void> _initializeSettings() async {
     final bool passwordEnabled = await _lockscreenSetting.isPasswordSet();
     final bool pinEnabled = await _lockscreenSetting.isPinSet();
-    final bool shouldShowAppContent =
-        _lockscreenSetting.getShouldShowAppContent();
     setState(() {
       isPasswordEnabled = passwordEnabled;
       isPinEnabled = pinEnabled;
-      hideAppContent = shouldShowAppContent;
+      hideAppContent = _lockscreenSetting.getShouldShowAppContent();
     });
   }
 
@@ -109,7 +107,7 @@ class _LockScreenOptionsState extends State<LockScreenOptions> {
     await _configuration.setSystemLockScreen(!appLock);
     await _lockscreenSetting.removePinAndPassword();
     if (appLock == true) {
-      await _lockscreenSetting.shouldShowAppContent(isContentVisible: false);
+      await _lockscreenSetting.setShowAppContent(false);
     }
     setState(() {
       _initializeSettings();
@@ -121,8 +119,8 @@ class _LockScreenOptionsState extends State<LockScreenOptions> {
     setState(() {
       hideAppContent = !hideAppContent;
     });
-    await _lockscreenSetting.shouldShowAppContent(
-      isContentVisible: hideAppContent,
+    await _lockscreenSetting.setShowAppContent(
+      hideAppContent,
     );
   }
 
