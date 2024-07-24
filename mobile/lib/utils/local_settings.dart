@@ -8,9 +8,6 @@ enum AlbumSortKey {
 }
 
 class LocalSettings {
-  LocalSettings._privateConstructor();
-
-  static final LocalSettings instance = LocalSettings._privateConstructor();
   static const kCollectionSortPref = "collection_sort_pref";
   static const kPhotoGridSize = "photo_grid_size";
   static const kEnableMagicSearch = "enable_magic_search";
@@ -20,11 +17,9 @@ class LocalSettings {
   static const kEnableMultiplePart = "ls.enable_multiple_part";
   static const kRateUsPromptThreshold = 2;
 
-  late SharedPreferences _prefs;
+  final SharedPreferences _prefs;
 
-  void init(SharedPreferences preferences) {
-    _prefs = preferences;
-  }
+  LocalSettings(this._prefs);
 
   AlbumSortKey albumSortKey() {
     return AlbumSortKey.values[_prefs.getInt(kCollectionSortPref) ?? 0];
@@ -78,5 +73,4 @@ class LocalSettings {
     await _prefs.setBool("remoteFetchEnabled", !remoteFetchEnabled);
   }
   //#endregion
-
 }
