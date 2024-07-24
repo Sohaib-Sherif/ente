@@ -239,9 +239,41 @@ class _LockScreenOptionsState extends State<LockScreenOptions> {
                                     height: 24,
                                   ),
                                   MenuItemWidget(
-                                    captionedTextWidget:
-                                        const CaptionedTextWidget(
-                                      title: "Hide content",
+                                    captionedTextWidget: CaptionedTextWidget(
+                                      title: S.of(context).autoLock,
+                                      subTitle: _formatTime(
+                                        Duration(
+                                          milliseconds:
+                                              autoLockTimeInMilliseconds,
+                                        ),
+                                      ),
+                                    ),
+                                    trailingIcon: Icons.chevron_right_outlined,
+                                    trailingIconIsMuted: true,
+                                    alignCaptionedTextToLeft: true,
+                                    singleBorderRadius: 8,
+                                    menuItemColor: colorTheme.fillFaint,
+                                    trailingIconColor: colorTheme.tabIcon,
+                                    onTap: () => _onAutolock(),
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.only(
+                                      top: 14,
+                                      left: 14,
+                                      right: 12,
+                                    ),
+                                    child: Text(
+                                      S.of(context).autoLockFeatureDescription,
+                                      style: textTheme.miniFaint,
+                                      textAlign: TextAlign.left,
+                                    ),
+                                  ),
+                                  const SizedBox(
+                                    height: 24,
+                                  ),
+                                  MenuItemWidget(
+                                    captionedTextWidget: CaptionedTextWidget(
+                                      title: S.of(context).hideContent,
                                     ),
                                     alignCaptionedTextToLeft: true,
                                     singleBorderRadius: 8,
@@ -260,8 +292,12 @@ class _LockScreenOptionsState extends State<LockScreenOptions> {
                                     ),
                                     child: Text(
                                       Platform.isAndroid
-                                          ? 'Hides app content in the app switcher and disables screenshots'
-                                          : 'Hides app content in the app switcher',
+                                          ? S
+                                              .of(context)
+                                              .hideContentDescriptionAndroid
+                                          : S
+                                              .of(context)
+                                              .hideContentDescriptionIos,
                                       style: textTheme.miniFaint,
                                       textAlign: TextAlign.left,
                                     ),
