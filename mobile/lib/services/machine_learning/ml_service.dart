@@ -28,7 +28,9 @@ import 'package:photos/services/machine_learning/ml_exceptions.dart';
 import "package:photos/services/machine_learning/ml_indexing_isolate.dart";
 import 'package:photos/services/machine_learning/ml_result.dart';
 import "package:photos/services/machine_learning/semantic_search/clip/clip_image_encoder.dart";
+import "package:photos/services/machine_learning/semantic_search/clip/clip_text_tokenizer.dart";
 import "package:photos/services/machine_learning/semantic_search/semantic_search_service.dart";
+import "package:photos/services/remote_assets_service.dart";
 import "package:photos/utils/image_ml_util.dart";
 import "package:photos/utils/ml_util.dart";
 import "package:photos/utils/network_util.dart";
@@ -45,8 +47,15 @@ class MLService {
   factory MLService() => instance;
 
   final _initModelLock = Lock();
+  final _downloadModelLock = Lock();
+  final _functionLock = Lock();
+  final _initIsolateLock = Lock();
 
   bool _isInitialized = false;
+  bool _isModelsInitialized = false;
+  bool areModelDownloaded = false;
+  bool _isModelsInitUsingEntePlugin = false;
+  bool _isIsolateSpawned = false;
 
   late String client;
 
@@ -511,7 +520,32 @@ class MLService {
     return actuallyRanML;
   }
 
-  Future<void> _ensureLoadedModels(FileMLInstruction instruction) async {
+  Future<void> downloadModels() {
+    if (areModelDownloaded) {
+      _logger.finest("Models already downloaded");
+      return Future.value();
+    }
+    if (_downloadModelLock.locked) {
+      _logger.finest("Download models already in progress");
+    }
+    return _downloadModelLock.synchronized(() async {
+      if (areModelDownloaded) {
+        return;
+      }
+      _logger.info('Downloading models');
+      await Future.wait([
+        FaceDetectionService.instance.downloadModel(),
+        FaceEmbeddingService.instance.downloadModel(),
+        ClipImageEncoder.instance.downloadModel(),
+        ClipImageEncoder.instance.downloadModel(),
+        RemoteAssetsService.instance
+            .getAsset(ClipTextTokenizer.kVocabRemotePath),
+      ]);
+      areModelDownloaded = true;
+    });
+  }
+
+  Future<void> _initModelsUsingFfiBasedPlugin() async {
     return _initModelLock.synchronized(() async {
       final faceDetectionLoaded = FaceDetectionService.instance.isInitialized;
       final faceEmbeddingLoaded = FaceEmbeddingService.instance.isInitialized;
@@ -550,7 +584,7 @@ class MLService {
 
   Future<void> _ensureReadyForInference() async {
     await _initIsolate();
-    await _initModelsUsingFfiBasedPlugin();
+    await downloadModels();
     if (Platform.isAndroid) {
       await _initModelUsingEntePlugin();
     } else {

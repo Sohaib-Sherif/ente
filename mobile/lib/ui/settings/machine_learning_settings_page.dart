@@ -120,6 +120,8 @@ class _MachineLearningSettingsPageState
               final isEnabled = await localSettings.toggleFaceIndexing();
               if (isEnabled) {
                 await MLService.instance.init();
+                MLService.instance.downloadModels().ignore();
+
                 await SemanticSearchService.instance.init();
                 unawaited(MLService.instance.runAllML(force: true));
               } else {}
@@ -136,9 +138,9 @@ class _MachineLearningSettingsPageState
           height: 12,
         ),
         hasEnabled
-            ? MLService.instance.modelsAreLoading
-                ? const ModelLoadingState()
-                : const MLStatusWidget()
+            ? MLService.instance.areModelDownloaded
+                ? const MLStatusWidget()
+                : const ModelLoadingState()
             : const SizedBox.shrink(),
       ],
     );

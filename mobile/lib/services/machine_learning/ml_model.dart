@@ -60,7 +60,20 @@ abstract class MlModel {
   // If `useEntePlugin` is set to true, the custom plugin is used for initialization.
   // Note: The custom plugin requires a dedicated isolate for loading the model to ensure thread safety and performance isolation.
   // In contrast, the current FFI-based plugin leverages the session memory address for session management, which does not require a dedicated isolate.
-  static Future<int> loadModel(
+  Future<void> loadModel({bool useEntePlugin = false}) async {
+    final model = await RemoteAssetsService.instance.getAsset(modelRemotePath);
+    if (useEntePlugin) {
+      await _loadModelWithEntePlugin(modelName, model.path);
+    } else {
+      await _loadModelWithFFI(modelName, model.path);
+    }
+  }
+
+  Future<void> downloadModel() async {
+    await RemoteAssetsService.instance.getAssetIfUpdated(modelRemotePath);
+  }
+
+  Future<void> _loadModelWithEntePlugin(
     String modelName,
     String modelPath,
   ) async {
