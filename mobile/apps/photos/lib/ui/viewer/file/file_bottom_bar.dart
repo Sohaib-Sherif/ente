@@ -207,7 +207,7 @@ class FileBottomBarState extends State<FileBottomBar> {
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: children,
                   ),
-                ),
+                ],
               ),
             ),
           ),
