@@ -378,7 +378,7 @@ class MLService {
   Future<bool> processImage(FileMLInstruction instruction) async {
     // TODO: clean this function up
     _logger.info(
-      "`processImage` start processing image with uploadedFileID: ${instruction.enteFile.uploadedFileID}",
+      "`processImage` start processing image with uploadedFileID: ${instruction.file.uploadedFileID}",
     );
     bool actuallyRanML = false;
 
@@ -389,7 +389,7 @@ class MLService {
       if (result == null) {
         if (!_shouldPauseIndexingAndClustering) {
           _logger.severe(
-            "Failed to analyze image with uploadedFileID: ${instruction.enteFile.uploadedFileID}",
+            "Failed to analyze image with uploadedFileID: ${instruction.file.uploadedFileID}",
           );
         }
         return actuallyRanML;
@@ -399,7 +399,7 @@ class MLService {
         final List<Face> faces = [];
         if (result.foundNoFaces) {
           debugPrint(
-            'No faces detected for file with name:${instruction.enteFile.displayName}',
+            'No faces detected for file with name:${instruction.file.displayName}',
           );
           faces.add(
             Face.empty(result.fileId, error: result.errorOccured),
@@ -410,9 +410,9 @@ class MLService {
               result.decodedImageSize.height == -1) {
             _logger.severe(
                 "decodedImageSize is not stored correctly for image with "
-                "ID: ${instruction.enteFile.uploadedFileID}");
+                "ID: ${instruction.file.uploadedFileID}");
             _logger.info(
-              "Using aligned image size for image with ID: ${instruction.enteFile.uploadedFileID}. This size is ${result.decodedImageSize.width}x${result.decodedImageSize.height} compared to size of ${instruction.enteFile.width}x${instruction.enteFile.height} in the metadata",
+              "Using aligned image size for image with ID: ${instruction.file.uploadedFileID}. This size is ${result.decodedImageSize.width}x${result.decodedImageSize.height} compared to size of ${instruction.file.width}x${instruction.file.height} in the metadata",
             );
           }
           for (int i = 0; i < result.faces!.length; ++i) {
@@ -452,10 +452,10 @@ class MLService {
         _logger.info("inserting ${faces.length} faces for ${result.fileId}");
         if (!result.errorOccured) {
           await RemoteFileMLService.instance.putFileEmbedding(
-            instruction.enteFile,
+            instruction.file,
             instruction.existingRemoteFileML ??
                 RemoteFileML.empty(
-                  instruction.enteFile.uploadedFileID!,
+                  instruction.file.uploadedFileID!,
                 ),
             faceEmbedding: result.facesRan
                 ? RemoteFaceEmbedding(
@@ -486,25 +486,25 @@ class MLService {
         actuallyRanML = true;
         await SemanticSearchService.storeClipImageResult(
           result.clip!,
-          instruction.enteFile,
+          instruction.file,
         );
       }
     } on ThumbnailRetrievalException catch (e, s) {
       _logger.severe(
-        'ThumbnailRetrievalException while processing image with ID ${instruction.enteFile.uploadedFileID}, storing empty face so indexing does not get stuck',
+        'ThumbnailRetrievalException while processing image with ID ${instruction.file.uploadedFileID}, storing empty face so indexing does not get stuck',
         e,
         s,
       );
       await FaceMLDataDB.instance.bulkInsertFaces(
-        [Face.empty(instruction.enteFile.uploadedFileID!, error: true)],
+        [Face.empty(instruction.file.uploadedFileID!, error: true)],
       );
       await SemanticSearchService.storeEmptyClipImageResult(
-        instruction.enteFile,
+        instruction.file,
       );
       return true;
     } catch (e, s) {
       _logger.severe(
-        "Failed to analyze using FaceML for image with ID: ${instruction.enteFile.uploadedFileID}. Not storing any faces, which means it will be automatically retried later.",
+        "Failed to analyze using FaceML for image with ID: ${instruction.file.uploadedFileID}. Not storing any faces, which means it will be automatically retried later.",
         e,
         s,
       );
@@ -526,16 +526,261 @@ class MLService {
         return;
       }
 
-      modelsAreLoading = true;
-      _logger.info(
-        'Loading models. faces: $shouldLoadFaces, clip: $shouldLoadClip',
-      );
-      await MLIndexingIsolate.instance
-          .loadModels(loadFaces: shouldLoadFaces, loadClip: shouldLoadClip);
-      _logger.info('Models loaded');
-      _logStatus();
-      modelsAreLoading = false;
+  Future<void> _initIsolate() async {
+    return _initIsolateLock.synchronized(() async {
+      if (_isIsolateSpawned) return;
+      _logger.info("initIsolate called");
+
+      _receivePort = ReceivePort();
+
+      try {
+        _isolate = await DartUiIsolate.spawn(
+          _isolateMain,
+          _receivePort.sendPort,
+        );
+        _mainSendPort = await _receivePort.first as SendPort;
+        _isIsolateSpawned = true;
+
+        _resetInactivityTimer();
+        _logger.info('initIsolate done');
+      } catch (e) {
+        _logger.severe('Could not spawn isolate', e);
+        _isIsolateSpawned = false;
+      }
     });
+  }
+
+  Future<void> _ensureReadyForInference() async {
+    await _initIsolate();
+    await _initModelsUsingFfiBasedPlugin();
+    if (Platform.isAndroid) {
+      await _initModelUsingEntePlugin();
+    } else {
+      await _initModelsUsingFfiBasedPlugin();
+    }
+  }
+
+  /// The main execution function of the isolate.
+  @pragma('vm:entry-point')
+  static void _isolateMain(SendPort mainSendPort) async {
+    Logger.root.level = kDebugMode ? Level.ALL : Level.INFO;
+    Logger.root.onRecord.listen((LogRecord rec) {
+      debugPrint('[MLIsolate] ${rec.toPrettyString()}');
+    });
+    final receivePort = ReceivePort();
+    mainSendPort.send(receivePort.sendPort);
+    receivePort.listen((message) async {
+      final functionIndex = message[0] as int;
+      final function = FaceMlOperation.values[functionIndex];
+      final args = message[1] as Map<String, dynamic>;
+      final sendPort = message[2] as SendPort;
+
+      try {
+        switch (function) {
+          case FaceMlOperation.analyzeImage:
+            final time = DateTime.now();
+            final MLResult result = await MLService._analyzeImageSync(args);
+            dev.log(
+              "`analyzeImageSync` function executed in ${DateTime.now().difference(time).inMilliseconds} ms",
+            );
+            sendPort.send(result.toJsonString());
+            break;
+          case FaceMlOperation.loadModels:
+            await FaceDetectionService.instance.loadModel(useEntePlugin: true);
+            await FaceEmbeddingService.instance.loadModel(useEntePlugin: true);
+            await ClipImageEncoder.instance.loadModel(useEntePlugin: true);
+            sendPort.send(true);
+            break;
+        }
+      } catch (e, stackTrace) {
+        dev.log(
+          "[SEVERE] Error in FaceML isolate: $e",
+          error: e,
+          stackTrace: stackTrace,
+        );
+        sendPort
+            .send({'error': e.toString(), 'stackTrace': stackTrace.toString()});
+      }
+    });
+  }
+
+  /// The common method to run any operation in the isolate. It sends the [message] to [_isolateMain] and waits for the result.
+  Future<dynamic> _runInIsolate(
+    (FaceMlOperation, Map<String, dynamic>) message,
+  ) async {
+    await _initIsolate();
+    return _functionLock.synchronized(() async {
+      _resetInactivityTimer();
+
+      if (_shouldPauseIndexingAndClustering) {
+        return null;
+      }
+
+      final completer = Completer<dynamic>();
+      final answerPort = ReceivePort();
+
+      _activeTasks++;
+      _mainSendPort.send([message.$1.index, message.$2, answerPort.sendPort]);
+
+      answerPort.listen((receivedMessage) {
+        if (receivedMessage is Map && receivedMessage.containsKey('error')) {
+          // Handle the error
+          final errorMessage = receivedMessage['error'];
+          final errorStackTrace = receivedMessage['stackTrace'];
+          final exception = Exception(errorMessage);
+          final stackTrace = StackTrace.fromString(errorStackTrace);
+          completer.completeError(exception, stackTrace);
+        } else {
+          completer.complete(receivedMessage);
+        }
+      });
+      _activeTasks--;
+
+      return completer.future;
+    });
+  }
+
+  /// Resets a timer that kills the isolate after a certain amount of inactivity.
+  ///
+  /// Should be called after initialization (e.g. inside `init()`) and after every call to isolate (e.g. inside `_runInIsolate()`)
+  void _resetInactivityTimer() {
+    _inactivityTimer?.cancel();
+    _inactivityTimer = Timer(_inactivityDuration, () {
+      if (_activeTasks > 0) {
+        _logger.info('Tasks are still running. Delaying isolate disposal.');
+        // Optionally, reschedule the timer to check again later.
+        _resetInactivityTimer();
+      } else {
+        _logger.info(
+          'Clustering Isolate has been inactive for ${_inactivityDuration.inSeconds} seconds with no tasks running. Killing isolate.',
+        );
+        _dispose();
+      }
+    });
+  }
+
+  void _dispose() async {
+    if (!_isIsolateSpawned) return;
+    _logger.info('Disposing isolate and models');
+    await _releaseModels();
+    _isIsolateSpawned = false;
+    _isolate.kill();
+    _receivePort.close();
+    _inactivityTimer?.cancel();
+  }
+
+  /// Analyzes the given image data by running the full pipeline for faces, using [_analyzeImageSync] in the isolate.
+  Future<MLResult?> _analyzeImageInSingleIsolate(
+    FileMLInstruction instruction,
+  ) async {
+    final String filePath = await getImagePathForML(instruction.file);
+
+    final Stopwatch stopwatch = Stopwatch()..start();
+    late MLResult result;
+
+    try {
+      final resultJsonString = await _runInIsolate(
+        (
+          FaceMlOperation.analyzeImage,
+          {
+            "enteFileID": instruction.file.uploadedFileID ?? -1,
+            "filePath": filePath,
+            "runFaces": instruction.shouldRunFaces,
+            "runClip": instruction.shouldRunClip,
+            "faceDetectionAddress":
+                FaceDetectionService.instance.sessionAddress,
+            "faceEmbeddingAddress":
+                FaceEmbeddingService.instance.sessionAddress,
+            "clipImageAddress": ClipImageEncoder.instance.sessionAddress,
+          }
+        ),
+      ) as String?;
+      if (resultJsonString == null) {
+        if (!_shouldPauseIndexingAndClustering) {
+          _logger.severe('Analyzing image in isolate is giving back null');
+        }
+        return null;
+      }
+      result = MLResult.fromJsonString(resultJsonString);
+    } catch (e, s) {
+      _logger.severe(
+        "Could not analyze image with ID ${instruction.file.uploadedFileID} \n",
+        e,
+        s,
+      );
+      debugPrint(
+        "This image with ID ${instruction.file.uploadedFileID} has name ${instruction.file.displayName}.",
+      );
+      final resultBuilder =
+          MLResult.fromEnteFileID(instruction.file.uploadedFileID!)
+            ..errorOccurred();
+      return resultBuilder;
+    }
+    stopwatch.stop();
+    _logger.info(
+      "Finished Analyze image with uploadedFileID ${instruction.file.uploadedFileID}, in "
+      "${stopwatch.elapsedMilliseconds} ms (including time waiting for inference engine availability)",
+    );
+
+    return result;
+  }
+
+  static Future<MLResult> _analyzeImageSync(Map args) async {
+    try {
+      final int enteFileID = args["enteFileID"] as int;
+      final String imagePath = args["filePath"] as String;
+      final bool runFaces = args["runFaces"] as bool;
+      final bool runClip = args["runClip"] as bool;
+      final int faceDetectionAddress = args["faceDetectionAddress"] as int;
+      final int faceEmbeddingAddress = args["faceEmbeddingAddress"] as int;
+      final int clipImageAddress = args["clipImageAddress"] as int;
+
+      dev.log(
+        "Start analyzing image with uploadedFileID: $enteFileID inside the isolate",
+      );
+      final time = DateTime.now();
+
+      // Decode the image once to use for both face detection and alignment
+      final imageData = await File(imagePath).readAsBytes();
+      final image = await decodeImageFromData(imageData);
+      final ByteData imageByteData = await getByteDataFromImage(image);
+      dev.log('Reading and decoding image took '
+          '${DateTime.now().difference(time).inMilliseconds} ms');
+      final decodedImageSize =
+          Dimensions(height: image.height, width: image.width);
+      final result = MLResult.fromEnteFileID(enteFileID);
+      result.decodedImageSize = decodedImageSize;
+
+      if (runFaces) {
+        final resultFaces = await FaceRecognitionService.runFacesPipeline(
+          enteFileID,
+          image,
+          imageByteData,
+          faceDetectionAddress,
+          faceEmbeddingAddress,
+        );
+        if (resultFaces.isEmpty) {
+          return result..noFaceDetected();
+        }
+        result.faces = resultFaces;
+      }
+
+      if (runClip) {
+        final clipResult = await SemanticSearchService.runClipImage(
+          enteFileID,
+          image,
+          imageByteData,
+          clipImageAddress,
+          useEntePlugin: Platform.isAndroid,
+        );
+        result.clip = clipResult;
+      }
+
+      return result;
+    } catch (e, s) {
+      dev.log("Could not analyze image: \n e: $e \n s: $s");
+      rethrow;
+    }
   }
 
   bool _cannotRunMLFunction({String function = ""}) {
