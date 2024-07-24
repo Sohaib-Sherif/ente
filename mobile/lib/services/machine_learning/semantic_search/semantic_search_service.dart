@@ -38,7 +38,7 @@ class SemanticSearchService {
   static const kDebounceDuration = Duration(milliseconds: 4000);
 
   final _logger = Logger("SemanticSearchService");
-  final _embeddingLoaderDebouncer =
+  final _reloadCacheDebouncer =
       Debouncer(kDebounceDuration, executionInterval: kDebounceDuration);
 
   bool _hasInitialized = false;
@@ -62,7 +62,7 @@ class SemanticSearchService {
     await _loadImageEmbeddings();
     Bus.instance.on<EmbeddingUpdatedEvent>().listen((event) {
       if (!_hasInitialized) return;
-      _embeddingLoaderDebouncer.run(() async {
+      _reloadCacheDebouncer.run(() async {
         await _loadImageEmbeddings();
       });
     });
