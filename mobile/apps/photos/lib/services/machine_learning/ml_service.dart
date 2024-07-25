@@ -1,5 +1,4 @@
 import "dart:async";
-import "dart:io" show Platform;
 import "dart:math" show min;
 import "dart:typed_data" show Uint8List;
 
