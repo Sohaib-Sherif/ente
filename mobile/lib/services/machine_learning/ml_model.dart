@@ -25,8 +25,6 @@ abstract class MlModel {
   int get sessionAddress =>
       usePlatformPlugin ? _nativePluginSessionIndex : _ffiSessionAddress;
 
-  // isInitialized is used to check if the model is loaded by the ffi based
-  // plugin
   bool _isFfiInitialized = false;
   int _ffiSessionAddress = -1;
 
@@ -71,9 +69,7 @@ abstract class MlModel {
     }
   }
 
-  // Initializes the model.
-  // If `useEntePlugin` is set to true, the custom plugin is used for initialization.
-  // Note: The custom plugin requires a dedicated isolate for loading the model to ensure thread safety and performance isolation.
+  // Note: The platform plugin requires a dedicated isolate for loading the model to ensure thread safety and performance isolation.
   // In contrast, the current FFI-based plugin leverages the session memory address for session management, which does not require a dedicated isolate.
   Future<void> loadModel({bool useEntePlugin = false}) async {
     final model = await RemoteAssetsService.instance.getAsset(modelRemotePath);
