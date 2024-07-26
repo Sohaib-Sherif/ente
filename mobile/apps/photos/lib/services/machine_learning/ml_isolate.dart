@@ -182,7 +182,7 @@ class MLIsolate {
   Future<MLResult?> analyzeImage(
     FileMLInstruction instruction,
   ) async {
-    final String filePath = await getImagePathForML(instruction.enteFile);
+    final String filePath = await getImagePathForML(instruction.file);
 
     final Stopwatch stopwatch = Stopwatch()..start();
     late MLResult result;
@@ -192,7 +192,7 @@ class MLIsolate {
         (
           MLOperation.analyzeImage,
           {
-            "enteFileID": instruction.enteFile.uploadedFileID ?? -1,
+            "enteFileID": instruction.file.uploadedFileID ?? -1,
             "filePath": filePath,
             "runFaces": instruction.shouldRunFaces,
             "runClip": instruction.shouldRunClip,
@@ -213,21 +213,21 @@ class MLIsolate {
       result = MLResult.fromJsonString(resultJsonString);
     } catch (e, s) {
       _logger.severe(
-        "Could not analyze image with ID ${instruction.enteFile.uploadedFileID} \n",
+        "Could not analyze image with ID ${instruction.file.uploadedFileID} \n",
         e,
         s,
       );
       debugPrint(
-        "This image with ID ${instruction.enteFile.uploadedFileID} has name ${instruction.enteFile.displayName}.",
+        "This image with ID ${instruction.file.uploadedFileID} has name ${instruction.file.displayName}.",
       );
       final resultBuilder =
-          MLResult.fromEnteFileID(instruction.enteFile.uploadedFileID!)
+          MLResult.fromEnteFileID(instruction.file.uploadedFileID!)
             ..errorOccurred();
       return resultBuilder;
     }
     stopwatch.stop();
     _logger.info(
-      "Finished Analyze image with uploadedFileID ${instruction.enteFile.uploadedFileID}, in "
+      "Finished Analyze image with uploadedFileID ${instruction.file.uploadedFileID}, in "
       "${stopwatch.elapsedMilliseconds} ms (including time waiting for inference engine availability)",
     );
 
