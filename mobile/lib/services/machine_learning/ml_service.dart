@@ -44,22 +44,15 @@ class MLService {
 
   final _initModelLock = Lock();
   final _downloadModelLock = Lock();
-  final _functionLock = Lock();
-  final _initIsolateLock = Lock();
 
   bool _isInitialized = false;
-  bool _isModelsInitialized = false;
-  bool areModelDownloaded = false;
-  bool _isModelsInitUsingEntePlugin = false;
-  bool _isIsolateSpawned = false;
+  bool areModelsDownloaded = false;
 
   late String client;
 
   bool get isInitialized => _isInitialized;
 
   bool get showClusteringIsHappening => _showClusteringIsHappening;
-
-  bool modelsAreLoading = false;
 
   bool debugIndexingDisabled = false;
   bool _showClusteringIsHappening = false;
@@ -71,7 +64,7 @@ class MLService {
   static const _kForceClusteringFaceCount = 8000;
 
   /// Only call this function once at app startup, after that you can directly call [runAllML]
-  Future<void> init() async {
+  Future<void> init({bool firstTime = false}) async {
     if (localSettings.isFaceIndexingEnabled == false || _isInitialized) {
       return;
     }
@@ -84,6 +77,9 @@ class MLService {
 
     // Activate FaceRecognitionService
     await FaceRecognitionService.instance.init();
+
+    // Download models if not already downloaded
+    unawaited(_ensureDownloadedModels(firstTime));
 
     // Listen on MachineLearningController
     Bus.instance.on<MachineLearningControlEvent>().listen((event) {
@@ -516,32 +512,26 @@ class MLService {
     return actuallyRanML;
   }
 
-  Future<void> downloadModels() {
-    if (areModelDownloaded) {
-      _logger.finest("Models already downloaded");
-      return Future.value();
-    }
+  Future<void> _ensureDownloadedModels([bool forceRefresh = false]) async {
     if (_downloadModelLock.locked) {
       _logger.finest("Download models already in progress");
     }
     return _downloadModelLock.synchronized(() async {
-      if (areModelDownloaded) {
+      if (areModelsDownloaded) {
+        _logger.finest("Models already downloaded");
         return;
       }
       _logger.info('Downloading models');
       await Future.wait([
-        FaceDetectionService.instance.downloadModel(),
-        FaceEmbeddingService.instance.downloadModel(),
-        ClipImageEncoder.instance.downloadModel(),
-        ClipImageEncoder.instance.downloadModel(),
-        RemoteAssetsService.instance
-            .getAsset(ClipTextTokenizer.kVocabRemotePath),
+        FaceDetectionService.instance.downloadModel(forceRefresh),
+        FaceEmbeddingService.instance.downloadModel(forceRefresh),
+        ClipImageEncoder.instance.downloadModel(forceRefresh),
       ]);
-      areModelDownloaded = true;
+      areModelsDownloaded = true;
     });
   }
 
-  Future<void> _initModelsUsingFfiBasedPlugin() async {
+  Future<void> _ensureLoadedModels(FileMLInstruction instruction) async {
     return _initModelLock.synchronized(() async {
       final faceDetectionLoaded = FaceDetectionService.instance.isInitialized;
       final faceEmbeddingLoaded = FaceEmbeddingService.instance.isInitialized;
@@ -554,27 +544,13 @@ class MLService {
         return;
       }
 
-  Future<void> _initIsolate() async {
-    return _initIsolateLock.synchronized(() async {
-      if (_isIsolateSpawned) return;
-      _logger.info("initIsolate called");
-
-      _receivePort = ReceivePort();
-
-      try {
-        _isolate = await DartUiIsolate.spawn(
-          _isolateMain,
-          _receivePort.sendPort,
-        );
-        _mainSendPort = await _receivePort.first as SendPort;
-        _isIsolateSpawned = true;
-
-        _resetInactivityTimer();
-        _logger.info('initIsolate done');
-      } catch (e) {
-        _logger.severe('Could not spawn isolate', e);
-        _isIsolateSpawned = false;
-      }
+      _logger.info(
+        'Loading models. faces: $shouldLoadFaces, clip: $shouldLoadClip',
+      );
+      await MLIndexingIsolate.instance
+          .loadModels(loadFaces: shouldLoadFaces, loadClip: shouldLoadClip);
+      _logger.info('Models loaded');
+      _logStatus();
     });
   }
 
