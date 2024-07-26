@@ -1,8 +1,9 @@
 import "dart:async";
+import "dart:io" show Platform;
 import "dart:math" show min;
 import "dart:typed_data" show Uint8List;
 
-import "package:flutter/foundation.dart" show debugPrint;
+import "package:flutter/foundation.dart" show debugPrint, kDebugMode;
 import "package:logging/logging.dart";
 import "package:package_info_plus/package_info_plus.dart";
 import "package:photos/core/event_bus.dart";
@@ -28,10 +29,7 @@ import 'package:photos/services/machine_learning/ml_exceptions.dart';
 import "package:photos/services/machine_learning/ml_indexing_isolate.dart";
 import 'package:photos/services/machine_learning/ml_result.dart';
 import "package:photos/services/machine_learning/semantic_search/clip/clip_image_encoder.dart";
-import "package:photos/services/machine_learning/semantic_search/clip/clip_text_tokenizer.dart";
 import "package:photos/services/machine_learning/semantic_search/semantic_search_service.dart";
-import "package:photos/services/remote_assets_service.dart";
-import "package:photos/utils/image_ml_util.dart";
 import "package:photos/utils/ml_util.dart";
 import "package:photos/utils/network_util.dart";
 import "package:synchronized/synchronized.dart";
@@ -41,9 +39,7 @@ class MLService {
 
   // Singleton pattern
   MLService._privateConstructor();
-
   static final instance = MLService._privateConstructor();
-
   factory MLService() => instance;
 
   final _initModelLock = Lock();
