@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/ente-io/museum/pkg/controller/file_copy"
+	"github.com/ente-io/museum/pkg/controller/filedata"
 
 	"github.com/ente-io/museum/pkg/repo/two_factor_recovery"
 
@@ -50,6 +51,7 @@ import (
 	castRepo "github.com/ente-io/museum/pkg/repo/cast"
 	"github.com/ente-io/museum/pkg/repo/datacleanup"
 	"github.com/ente-io/museum/pkg/repo/embedding"
+	fileDataRepo "github.com/ente-io/museum/pkg/repo/filedata"
 	"github.com/ente-io/museum/pkg/repo/kex"
 	"github.com/ente-io/museum/pkg/repo/passkey"
 	"github.com/ente-io/museum/pkg/repo/remotestore"
@@ -164,6 +166,7 @@ func main() {
 	fileRepo := &repo.FileRepository{DB: db, S3Config: s3Config, QueueRepo: queueRepo,
 		ObjectRepo: objectRepo, ObjectCleanupRepo: objectCleanupRepo,
 		ObjectCopiesRepo: objectCopiesRepo, UsageRepo: usageRepo}
+	fileDataRepo := &fileDataRepo.Repository{DB: db}
 	familyRepo := &repo.FamilyRepository{DB: db}
 	trashRepo := &repo.TrashRepository{DB: db, ObjectRepo: objectRepo, FileRepo: fileRepo, QueueRepo: queueRepo}
 	publicCollectionRepo := repo.NewPublicCollectionRepository(db, viper.GetString("apps.public-albums"))
@@ -240,6 +243,9 @@ func main() {
 		FileRepo:         fileRepo,
 	}
 
+	accessCtrl := access.NewAccessController(collectionRepo, fileRepo)
+	fileDataCtrl := filedata.New(fileDataRepo, accessCtrl, objectCleanupController, s3Config, queueRepo, taskLockingRepo, fileRepo, collectionRepo, hostName)
+
 	fileController := &controller.FileController{
 		FileRepo:              fileRepo,
 		ObjectRepo:            objectRepo,
@@ -288,8 +294,6 @@ func main() {
 		UserRepo:              userRepo,
 		JwtSecret:             jwtSecretBytes,
 	}
-
-	accessCtrl := access.NewAccessController(collectionRepo, fileRepo)
 
 	collectionController := &controller.CollectionController{
 		CollectionRepo:       collectionRepo,
@@ -403,6 +407,7 @@ func main() {
 	fileHandler := &api.FileHandler{
 		Controller:   fileController,
 		FileCopyCtrl: fileCopyCtrl,
+		FileDataCtrl: fileDataCtrl,
 	}
 	privateAPI.GET("/files/upload-urls", fileHandler.GetUploadURLs)
 	privateAPI.GET("/files/multipart-upload-urls", fileHandler.GetMultipartUploadURLs)
@@ -708,7 +713,7 @@ func main() {
 	setupAndStartCrons(
 		userAuthRepo, publicCollectionRepo, twoFactorRepo, passkeysRepo, fileController, taskLockingRepo, emailNotificationCtrl,
 		trashController, pushController, objectController, dataCleanupController, storageBonusCtrl,
-		embeddingController, healthCheckHandler, kexCtrl, castDb)
+		embeddingController, fileDataCtrl, healthCheckHandler, kexCtrl, castDb)
 
 	// Create a new collector, the name will be used as a label on the metrics
 	collector := sqlstats.NewStatsCollector("prod_db", db)
@@ -838,6 +843,7 @@ func setupAndStartCrons(userAuthRepo *repo.UserAuthRepository, publicCollectionR
 	dataCleanupCtrl *dataCleanupCtrl.DeleteUserCleanupController,
 	storageBonusCtrl *storagebonus.Controller,
 	embeddingCtrl *embeddingCtrl.Controller,
+	fileDataCtrl *filedata.Controller,
 	healthCheckHandler *api.HealthCheckHandler,
 	kexCtrl *kexCtrl.Controller,
 	castDb castRepo.Repository) {
@@ -881,8 +887,10 @@ func setupAndStartCrons(userAuthRepo *repo.UserAuthRepository, publicCollectionR
 	schedule(c, "@every 2m", func() {
 		fileController.CleanupDeletedFiles()
 	})
+	fileDataCtrl.CleanUpDeletedFileData()
 	schedule(c, "@every 101s", func() {
 		embeddingCtrl.CleanupDeletedEmbeddings()
+		fileDataCtrl.CleanUpDeletedFileData()
 	})
 
 	schedule(c, "@every 10m", func() {
