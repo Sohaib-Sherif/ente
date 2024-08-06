@@ -158,6 +158,11 @@ func (repo *ObjectRepository) MarkObjectsAsDeletedForFileIDs(ctx context.Context
 		return nil, stacktrace.Propagate(err, "")
 	}
 
+	err = repo.QueueRepo.AddItems(ctx, tx, DeleteFileDataQueue, embeddingsToBeDeleted)
+	if err != nil {
+		return nil, stacktrace.Propagate(err, "")
+	}
+
 	_, err = tx.ExecContext(ctx, `UPDATE object_keys SET is_deleted = TRUE WHERE file_id = ANY($1)`, pq.Array(fileIDs))
 	if err != nil {
 		return nil, stacktrace.Propagate(err, "")

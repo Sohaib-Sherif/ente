@@ -909,6 +909,7 @@ func setupAndStartCrons(userAuthRepo *repo.UserAuthRepository, publicCollectionR
 	storageBonusCtrl *storagebonus.Controller,
 	emergencyCtrl *emergency.Controller,
 	embeddingCtrl *embeddingCtrl.Controller,
+	fileDataCtrl *filedata.Controller,
 	healthCheckHandler *api.HealthCheckHandler,
 	kexCtrl *kexCtrl.Controller,
 	castDb castRepo.Repository) {
@@ -952,8 +953,10 @@ func setupAndStartCrons(userAuthRepo *repo.UserAuthRepository, publicCollectionR
 	schedule(c, "@every 8m", func() {
 		fileController.CleanupDeletedFiles()
 	})
+	fileDataCtrl.CleanUpDeletedFileData()
 	schedule(c, "@every 101s", func() {
 		embeddingCtrl.CleanupDeletedEmbeddings()
+		fileDataCtrl.CleanUpDeletedFileData()
 	})
 
 	schedule(c, "@every 17m", func() {
