@@ -106,7 +106,7 @@ class FaceRecognitionService {
       _logger.info("embeddingResponse ${res.debugLog()}");
       final List<Face> faces = [];
       final List<ClipEmbedding> clipEmbeddings = [];
-      for (RemoteFileML fileMl in res.mlData.values) {
+      for (RemoteFileDerivedData fileMl in res.mlData.values) {
         final existingInstruction = pendingIndex[fileMl.fileID]!;
         final facesFromRemoteEmbedding = _getFacesFromRemoteEmbedding(fileMl);
         //Note: Always do null check, empty value means no face was found.
@@ -143,11 +143,6 @@ class FaceRecognitionService {
           }
         }
       }
-      if (res.noEmbeddingFileIDs.isNotEmpty) {
-        for (final fileID in res.noEmbeddingFileIDs) {
-          faces.add(Face.empty(fileID, error: false));
-        }
-      }
       await FaceMLDataDB.instance.bulkInsertFaces(faces);
       await EmbeddingsDB.instance.putMany(clipEmbeddings);
     }
@@ -156,6 +151,32 @@ class FaceRecognitionService {
       _logger.info("queueing indexing for  $batchToYield.length");
       yield batchToYield;
     }
+  }
+
+  // Returns a list of faces from the given remote fileML. null if the version is less than the current version
+  // or if the remote faceEmbedding is null.
+  List<Face>? _getFacesFromRemoteEmbedding(RemoteFileDerivedData fileMl) {
+    final RemoteFaceEmbedding? remoteFaceEmbedding = fileMl.faceEmbedding;
+    if (shouldDiscardRemoteEmbedding(fileMl)) {
+      return null;
+    }
+    final List<Face> faces = [];
+    if (remoteFaceEmbedding!.faces.isEmpty) {
+      faces.add(
+        Face.empty(
+          fileMl.fileID,
+        ),
+      );
+    } else {
+      for (final f in remoteFaceEmbedding.faces) {
+        f.fileInfo = FileInfo(
+          imageHeight: remoteFaceEmbedding.height,
+          imageWidth: remoteFaceEmbedding.width,
+        );
+        faces.add(f);
+      }
+    }
+    return faces;
   }
 
   static Future<List<FaceResult>> runFacesPipeline(
