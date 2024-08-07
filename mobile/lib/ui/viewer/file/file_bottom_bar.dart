@@ -45,7 +45,7 @@ class FileBottomBar extends StatefulWidget {
 
 class FileBottomBarState extends State<FileBottomBar> {
   final GlobalKey shareButtonKey = GlobalKey();
-  bool _isFileSwipeLocked = false;
+  bool isGuestView = false;
   late final StreamSubscription<FileSwipeLockEvent>
       _fileSwipeLockEventSubscription;
   int? lastFileGenID;
@@ -56,7 +56,7 @@ class FileBottomBarState extends State<FileBottomBar> {
     _fileSwipeLockEventSubscription =
         Bus.instance.on<FileSwipeLockEvent>().listen((event) {
       setState(() {
-        _isFileSwipeLocked = event.shouldSwipeLock;
+        isGuestView = event.isGuestView;
       });
     });
   }
@@ -188,9 +188,9 @@ class FileBottomBarState extends State<FileBottomBar> {
       valueListenable: widget.enableFullScreenNotifier,
       builder: (BuildContext context, bool isFullScreen, _) {
         return IgnorePointer(
-          ignoring: isFullScreen || _isFileSwipeLocked,
+          ignoring: isFullScreen || isGuestView,
           child: AnimatedOpacity(
-            opacity: isFullScreen || _isFileSwipeLocked ? 0 : 1,
+            opacity: isFullScreen || isGuestView ? 0 : 1,
             duration: const Duration(milliseconds: 250),
             curve: Curves.easeInOut,
             child: Align(

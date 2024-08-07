@@ -89,7 +89,8 @@ class _DetailPageState extends State<DetailPage> {
   bool _hasLoadedTillEnd = false;
   final _enableFullScreenNotifier = ValueNotifier(false);
   bool _isFirstOpened = true;
-  bool isFileSwipeLocked = false;
+  bool isGuestView = false;
+  bool swipeLocked = false;
   late final StreamSubscription<FileSwipeLockEvent>
       _fileSwipeLockEventSubscription;
 
@@ -105,7 +106,8 @@ class _DetailPageState extends State<DetailPage> {
     _fileSwipeLockEventSubscription =
         Bus.instance.on<FileSwipeLockEvent>().listen((event) {
       setState(() {
-        isFileSwipeLocked = event.shouldSwipeLock;
+        isGuestView = event.isGuestView;
+        swipeLocked = event.swipeLocked;
       });
     });
   }
@@ -141,12 +143,12 @@ class _DetailPageState extends State<DetailPage> {
           " files .",
     );
     return PopScope(
-      canPop: !isFileSwipeLocked,
+      canPop: !isGuestView,
       onPopInvoked: (didPop) async {
-        if (isFileSwipeLocked) {
+        if (isGuestView) {
           final authenticated = await _requestAuthentication();
           if (authenticated) {
-            Bus.instance.fire(FileSwipeLockEvent(false));
+            Bus.instance.fire(FileSwipeLockEvent(false, false));
           }
         }
       },
@@ -179,7 +181,7 @@ class _DetailPageState extends State<DetailPage> {
                     _files![selectedIndex],
                     _onEditFileRequested,
                     widget.config.mode == DetailPageMode.minimalistic &&
-                        !isFileSwipeLocked,
+                        !isGuestView,
                     onFileRemoved: _onFileRemoved,
                     userID: Configuration.instance.getUserID(),
                     enableFullScreenNotifier: _enableFullScreenNotifier,
@@ -298,10 +300,13 @@ class _DetailPageState extends State<DetailPage> {
         } else {
           _selectedIndexNotifier.value = index;
         }
+        Bus.instance.fire(FileSwipeLockEvent(isGuestView, swipeLocked));
         _preloadEntries();
       },
-      physics: _shouldDisableScroll || isFileSwipeLocked
-          ? const NeverScrollableScrollPhysics()
+      physics: _shouldDisableScroll || isGuestView
+          ? swipeLocked
+              ? const NeverScrollableScrollPhysics()
+              : const FastScrollPhysics(speedFactor: 4.0)
           : const FastScrollPhysics(speedFactor: 4.0),
       controller: _pageController,
       itemCount: _files!.length,
