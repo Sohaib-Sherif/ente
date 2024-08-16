@@ -17,6 +17,9 @@ const personIdColumn = 'person_id';
 const clusterIDColumn = 'cluster_id';
 const personOrClusterIdColumn = 'person_or_cluster_id';
 
+const personIdColumn = 'person_id';
+const clusterIDColumn = 'cluster_id';
+
 const createFacesTable = '''CREATE TABLE IF NOT EXISTS $facesTable (
   $fileIDColumn	INTEGER NOT NULL,
   $faceIDColumn  TEXT NOT NULL UNIQUE,
