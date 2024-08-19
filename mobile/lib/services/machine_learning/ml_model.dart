@@ -18,7 +18,8 @@ abstract class MlModel {
 
   final _downloadModelLock = Lock();
 
-  static final bool usePlatformPlugin = Platform.isAndroid;
+  // static final bool usePlatformPlugin = Platform.isAndroid;
+  static const bool usePlatformPlugin = false;
 
   bool get isInitialized =>
       usePlatformPlugin ? _isNativePluginInitialized : _isFfiInitialized;
