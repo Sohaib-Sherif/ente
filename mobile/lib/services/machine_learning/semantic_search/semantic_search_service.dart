@@ -21,6 +21,7 @@ import "package:photos/services/machine_learning/face_ml/face_clustering/cosine_
 import "package:photos/services/machine_learning/ml_computer.dart";
 import "package:photos/services/machine_learning/ml_result.dart";
 import "package:photos/services/machine_learning/semantic_search/clip/clip_image_encoder.dart";
+import "package:photos/utils/debouncer.dart";
 import "package:shared_preferences/shared_preferences.dart";
 
 class SemanticSearchService {
