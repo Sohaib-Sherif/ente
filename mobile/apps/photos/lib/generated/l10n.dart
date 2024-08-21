@@ -9637,16 +9637,6 @@ class S {
     );
   }
 
-  /// `To enable app lock, please setup device passcode or screen lock in your system settings.`
-  String get toEnableAppLockPleaseSetupDevicePasscodeOrScreen {
-    return Intl.message(
-      'To enable app lock, please setup device passcode or screen lock in your system settings.',
-      name: 'toEnableAppLockPleaseSetupDevicePasscodeOrScreen',
-      desc: '',
-      args: [],
-    );
-  }
-
   /// `Tap to unlock`
   String get tapToUnlock {
     return Intl.message(
@@ -12681,6 +12671,16 @@ class S {
     return Intl.message(
       'Choose between your device\'s default lock screen and a custom lock screen with a PIN or password.',
       name: 'appLockDescriptions',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `To enable app lock, please setup device passcode or screen lock in your system settings.`
+  String get toEnableAppLockPleaseSetupDevicePasscodeOrScreen {
+    return Intl.message(
+      'To enable app lock, please setup device passcode or screen lock in your system settings.',
+      name: 'toEnableAppLockPleaseSetupDevicePasscodeOrScreen',
       desc: '',
       args: [],
     );
