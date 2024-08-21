@@ -9274,6 +9274,176 @@ class S {
       args: [],
     );
   }
+
+  /// `Hide content`
+  String get hideContent {
+    return Intl.message(
+      'Hide content',
+      name: 'hideContent',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Hides app content in the app switcher and disables screenshots`
+  String get hideContentDescriptionAndroid {
+    return Intl.message(
+      'Hides app content in the app switcher and disables screenshots',
+      name: 'hideContentDescriptionAndroid',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Hides app content in the app switcher`
+  String get hideContentDescriptionIos {
+    return Intl.message(
+      'Hides app content in the app switcher',
+      name: 'hideContentDescriptionIos',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Password strength is calculated considering the length of the password, used characters, and whether or not the password appears in the top 10,000 most used passwords`
+  String get passwordStrengthInfo {
+    return Intl.message(
+      'Password strength is calculated considering the length of the password, used characters, and whether or not the password appears in the top 10,000 most used passwords',
+      name: 'passwordStrengthInfo',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No quick links selected`
+  String get noQuickLinksSelected {
+    return Intl.message(
+      'No quick links selected',
+      name: 'noQuickLinksSelected',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Please select quick links to remove`
+  String get pleaseSelectQuickLinksToRemove {
+    return Intl.message(
+      'Please select quick links to remove',
+      name: 'pleaseSelectQuickLinksToRemove',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Remove public links`
+  String get removePublicLinks {
+    return Intl.message(
+      'Remove public links',
+      name: 'removePublicLinks',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `This will remove public links of all selected quick links.`
+  String get thisWillRemovePublicLinksOfAllSelectedQuickLinks {
+    return Intl.message(
+      'This will remove public links of all selected quick links.',
+      name: 'thisWillRemovePublicLinksOfAllSelectedQuickLinks',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Guest view`
+  String get guestView {
+    return Intl.message(
+      'Guest view',
+      name: 'guestView',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `To enable guest view, please setup device passcode or screen lock in your system settings.`
+  String get guestViewEnablePreSteps {
+    return Intl.message(
+      'To enable guest view, please setup device passcode or screen lock in your system settings.',
+      name: 'guestViewEnablePreSteps',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Guest View`
+  String get cl_guest_view_title {
+    return Intl.message(
+      'Guest View',
+      name: 'cl_guest_view_title',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Handing over your phone to show photos to a friend? Don't worry about them swiping too far.\nGuest view will lock them into the photos you select.`
+  String get cl_guest_view_description {
+    return Intl.message(
+      'Handing over your phone to show photos to a friend? Don\'t worry about them swiping too far.\nGuest view will lock them into the photos you select.',
+      name: 'cl_guest_view_description',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Select photos and check out "Guest view".`
+  String get cl_guest_view_call_to_action {
+    return Intl.message(
+      'Select photos and check out "Guest view".',
+      name: 'cl_guest_view_call_to_action',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Panorama Viewer`
+  String get cl_panorama_viewer_title {
+    return Intl.message(
+      'Panorama Viewer',
+      name: 'cl_panorama_viewer_title',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `We've added support for viewing panorama photos with 360 degree views. The experience is immersive with motion-based navigation!`
+  String get cl_panorama_viewer_description {
+    return Intl.message(
+      'We\'ve added support for viewing panorama photos with 360 degree views. The experience is immersive with motion-based navigation!',
+      name: 'cl_panorama_viewer_description',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Video Player`
+  String get cl_video_player_title {
+    return Intl.message(
+      'Video Player',
+      name: 'cl_video_player_title',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Introducing a fresh new video player, with better playback controls and support for HDR videos.`
+  String get cl_video_player_description {
+    return Intl.message(
+      'Introducing a fresh new video player, with better playback controls and support for HDR videos.',
+      name: 'cl_video_player_description',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<S> {
