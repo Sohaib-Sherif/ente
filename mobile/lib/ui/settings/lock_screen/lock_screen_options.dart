@@ -176,7 +176,7 @@ class _LockScreenOptionsState extends State<LockScreenOptions> {
                                         right: 12,
                                       ),
                                       child: Text(
-                                        S.of(context).appLockDescription,
+                                        S.of(context).appLockDescriptions,
                                         style: textTheme.miniFaint,
                                         textAlign: TextAlign.left,
                                       ),
