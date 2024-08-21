@@ -1381,7 +1381,6 @@
   "addNameOrMerge": "Name hinzufügen oder zusammenführen",
   "mergeWithExisting": "Mit vorhandenem zusammenführen",
   "newPerson": "Neue Person",
-  "addName": "Name hinzufügen",
   "add": "Hinzufügen",
   "extraPhotosFoundFor": "Zusätzliche Fotos für {text} gefunden",
   "@extraPhotosFoundFor": {

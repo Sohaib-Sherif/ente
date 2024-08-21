@@ -12665,6 +12665,26 @@ class S {
       args: [],
     );
   }
+
+  /// `Choose between your device's default lock screen and a custom lock screen with a PIN or password.`
+  String get appLockDescription {
+    return Intl.message(
+      'Choose between your device\'s default lock screen and a custom lock screen with a PIN or password.',
+      name: 'appLockDescription',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Choose between your device's default lock screen and a custom lock screen with a PIN or password.`
+  String get appLockDescriptions {
+    return Intl.message(
+      'Choose between your device\'s default lock screen and a custom lock screen with a PIN or password.',
+      name: 'appLockDescriptions',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<S> {

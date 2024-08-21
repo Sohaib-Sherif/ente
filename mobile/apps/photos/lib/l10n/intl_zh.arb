@@ -1342,6 +1342,19 @@
   "noSystemLockFound": "未找到系统锁",
   "tapToUnlock": "点击解锁",
   "tooManyIncorrectAttempts": "错误尝试次数过多",
+  "mlFunctions": "ML functions",
+  "useAsCover": "用作封面",
+  "notPersonLabel": "不是 {name}？",
+  "@notPersonLabel": {
+    "description": "Label to indicate that the person in the photo is not the person whose name is mentioned",
+    "placeholders": {
+      "name": {
+        "content": "{name}",
+        "type": "String"
+      }
+    }
+  },
+  "panorama": "全景",
   "videoInfo": "视频详情",
   "autoLock": "自动锁定",
   "immediately": "立即",
