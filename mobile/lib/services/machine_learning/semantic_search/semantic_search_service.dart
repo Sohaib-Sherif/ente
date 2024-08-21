@@ -43,7 +43,7 @@ class SemanticSearchService {
   String? _latestPendingQuery;
 
   Future<void> init() async {
-    if (!localSettings.isFaceIndexingEnabled) {
+    if (!localSettings.isMLIndexingEnabled) {
       return;
     }
     if (_hasInitialized) {
@@ -61,7 +61,7 @@ class SemanticSearchService {
   }
 
   bool isMagicSearchEnabledAndReady() {
-    return localSettings.isFaceIndexingEnabled &&
+    return localSettings.isMLIndexingEnabled &&
         _textModelIsLoaded &&
         _cachedImageEmbeddings.isNotEmpty;
   }
@@ -73,7 +73,7 @@ class SemanticSearchService {
     if (!isMagicSearchEnabledAndReady()) {
       if (flagService.internalUser) {
         _logger.info(
-          "Magic search enabled ${localSettings.isFaceIndexingEnabled}, loaded $_textModelIsLoaded cached ${_cachedImageEmbeddings.isNotEmpty}",
+          "Magic search enabled ${localSettings.isMLIndexingEnabled}, loaded $_textModelIsLoaded cached ${_cachedImageEmbeddings.isNotEmpty}",
         );
       }
       return (query, <EnteFile>[]);
