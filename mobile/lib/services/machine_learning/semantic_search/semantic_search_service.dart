@@ -304,6 +304,7 @@ class SemanticSearchService {
     ByteData imageByteData,
     int clipImageAddress,
   ) async {
+    final startTime = DateTime.now();
     final embedding = await ClipImageEncoder.predict(
       image,
       imageByteData,
@@ -311,6 +312,9 @@ class SemanticSearchService {
     );
 
     final clipResult = ClipResult(fileID: enteFileID, embedding: embedding);
+
+    dev.log('Finished running ClipImage for $enteFileID in '
+        '${DateTime.now().difference(startTime).inMilliseconds} ms');
 
     return clipResult;
   }
