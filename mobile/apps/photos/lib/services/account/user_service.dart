@@ -728,7 +728,7 @@ class UserService {
     final String srpB = createSessionResponse.data["srpB"];
 
     final serverB = SRP6Util.decodeBigInt(base64Decode(srpB));
-    // ignore: unused_local_variable, need to calculate secret to get M1,
+    // ignore: unused_local_variable
     final clientS = client.calculateSecret(serverB);
     final clientM = client.calculateClientEvidenceMessage();
     final response = await _dio.post(
