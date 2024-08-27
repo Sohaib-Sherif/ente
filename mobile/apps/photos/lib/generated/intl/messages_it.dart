@@ -359,7 +359,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "addFiles": MessageLookupByLibrary.simpleMessage("Aggiungi File"),
         "addFromDevice":
             MessageLookupByLibrary.simpleMessage("Aggiungi dal dispositivo"),
-        "addItem": m2,
+        "addItem": m4,
         "addLocation": MessageLookupByLibrary.simpleMessage("Aggiungi luogo"),
         "addLocationButton": MessageLookupByLibrary.simpleMessage("Aggiungi"),
         "addMemoriesWidgetPrompt": MessageLookupByLibrary.simpleMessage(

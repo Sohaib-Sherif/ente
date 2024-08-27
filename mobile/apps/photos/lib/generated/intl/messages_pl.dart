@@ -277,7 +277,7 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Dodaj nową osobę"),
         "addOnPageSubtitle":
             MessageLookupByLibrary.simpleMessage("Szczegóły dodatków"),
-        "addOnValidTill": m3,
+        "addOnValidTill": m5,
         "addOns": MessageLookupByLibrary.simpleMessage("Dodatki"),
         "addPhotos": MessageLookupByLibrary.simpleMessage("Dodaj zdjęcia"),
         "addSelected": MessageLookupByLibrary.simpleMessage("Dodaj zaznaczone"),

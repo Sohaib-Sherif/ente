@@ -28,7 +28,7 @@ class MessageLookup extends MessageLookupByLibrary {
   static String m2(count) =>
       "${Intl.plural(count, one: '添加项目', other: '添加数个项目')}";
 
-  static String m3(storageAmount, endDate) =>
+  static String m5(storageAmount, endDate) =>
       "您的 ${storageAmount} 插件有效期至 ${endDate}";
 
   static String m4(count) =>
@@ -312,7 +312,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "addCollaborators": m1,
         "addFiles": MessageLookupByLibrary.simpleMessage("添加文件"),
         "addFromDevice": MessageLookupByLibrary.simpleMessage("从设备添加"),
-        "addItem": m2,
+        "addItem": m4,
         "addLocation": MessageLookupByLibrary.simpleMessage("添加地点"),
         "addLocationButton": MessageLookupByLibrary.simpleMessage("添加"),
         "addMore": MessageLookupByLibrary.simpleMessage("添加更多"),
@@ -321,7 +321,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "addNew": MessageLookupByLibrary.simpleMessage("新建"),
         "addNewPerson": MessageLookupByLibrary.simpleMessage("添加新人物"),
         "addOnPageSubtitle": MessageLookupByLibrary.simpleMessage("附加组件详情"),
-        "addOnValidTill": m3,
+        "addOnValidTill": m5,
         "addOns": MessageLookupByLibrary.simpleMessage("附加组件"),
         "addPhotos": MessageLookupByLibrary.simpleMessage("添加照片"),
         "addSelected": MessageLookupByLibrary.simpleMessage("添加所选项"),
