@@ -14,6 +14,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/ente-io/museum/ente/base"
 	"github.com/ente-io/museum/pkg/controller/file_copy"
 	"github.com/ente-io/museum/pkg/controller/filedata"
 
@@ -362,7 +363,14 @@ func main() {
 	server.Use(p.HandlerFunc())
 
 	// note: the recover middleware must be in the last
-	server.Use(requestid.New(), middleware.Logger(urlSanitizer), cors(), gzip.Gzip(gzip.DefaultCompression), middleware.PanicRecover())
+
+	server.Use(requestid.New(
+		requestid.Config{
+			Generator: func() string {
+				return base.ServerReqID()
+			},
+		}),
+		middleware.Logger(urlSanitizer), cors(), gzip.Gzip(gzip.DefaultCompression), middleware.PanicRecover())
 
 	publicAPI := server.Group("/")
 	publicAPI.Use(rateLimiter.GlobalRateLimiter(), rateLimiter.APIRateLimitMiddleware(urlSanitizer))
