@@ -3,8 +3,9 @@ package base
 import (
 	"errors"
 	"fmt"
+
 	"github.com/google/uuid"
-	"github.com/matoous/go-nanoid/v2"
+	gonanoid "github.com/matoous/go-nanoid/v2"
 )
 
 // Ref https://github.com/ente-io/ente/blob/main/web/packages/base/id.ts#L4
