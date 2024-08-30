@@ -66,9 +66,7 @@ class MLIsolate {
   @pragma('vm:entry-point')
   static void _isolateMain(SendPort mainSendPort) async {
     Logger.root.level = kDebugMode ? Level.ALL : Level.INFO;
-    Logger.root.onRecord.listen((LogRecord rec) {
-      debugPrint('[MLIsolate] ${rec.toPrettyString()}');
-    });
+    Logger.root.onRecord.listen(SuperLogging.onLogRecord);
     final receivePort = ReceivePort();
     mainSendPort.send(receivePort.sendPort);
     receivePort.listen((message) async {
@@ -92,6 +90,7 @@ class MLIsolate {
             final modelPaths = args['modelPaths'] as List<String>;
             final addresses = <int>[];
             for (int i = 0; i < modelNames.length; i++) {
+              // TODO:lau check logging here
               final int address = await MlModel.loadModel(
                 modelNames[i],
                 modelPaths[i],

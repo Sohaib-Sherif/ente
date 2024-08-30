@@ -462,6 +462,11 @@ Future<MLResult> analyzeImageStatic(Map args) async {
       'Finished analyzeImageStatic for fileID $enteFileID, in $totalMs ms (decode: $decodeMs ms$faceMsString$clipMsString)',
     );
 
+    final endTime = DateTime.now();
+    _logger.info(
+      'Finished analyzeImageStatic with fileID: $enteFileID, in ${endTime.difference(startTime).inMilliseconds} ms',
+    );
+
     return result;
   } catch (e, s) {
     _logger.severe("Could not analyze image", e, s);
