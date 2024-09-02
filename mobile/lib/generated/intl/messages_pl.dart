@@ -402,6 +402,10 @@ class MessageLookup extends MessageLookupByLibrary {
             "Kopia zapasowa przez dane mobilne"),
         "backupSettings":
             MessageLookupByLibrary.simpleMessage("Ustawienia kopii zapasowej"),
+        "backupStatus":
+            MessageLookupByLibrary.simpleMessage("Status kopii zapasowej"),
+        "backupStatusDescription": MessageLookupByLibrary.simpleMessage(
+            "Elementy, których kopia zapasowa została utworzona, zostaną wyświetlone w tym miejscu"),
         "backupVideos":
             MessageLookupByLibrary.simpleMessage("Utwórz kopię zapasową wideo"),
         "blackFridaySale": MessageLookupByLibrary.simpleMessage(
@@ -519,7 +523,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "confirmAccountDeletion":
             MessageLookupByLibrary.simpleMessage("Potwierdź usunięcie konta"),
         "confirmDeletePrompt": MessageLookupByLibrary.simpleMessage(
-            "Tak, chcę trwale usunąć konto i wszystkie dane z nim powiązane."),
+            "Tak, chcę trwale usunąć to konto i jego dane ze wszystkich aplikacji."),
         "confirmPassword":
             MessageLookupByLibrary.simpleMessage("Powtórz hasło"),
         "confirmPlanChange":
