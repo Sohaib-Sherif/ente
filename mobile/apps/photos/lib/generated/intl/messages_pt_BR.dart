@@ -25,7 +25,7 @@ class MessageLookup extends MessageLookupByLibrary {
   static String m1(count) =>
       "${Intl.plural(count, zero: 'Adicionar colaborador', one: 'Adicionar colaborador', other: 'Adicionar colaboradores')}";
 
-  static String m4(count) =>
+  static String m5(count) =>
       "${Intl.plural(count, one: 'Adicionar item', other: 'Adicionar itens')}";
 
   static String m3(storageAmount, endDate) =>
@@ -373,7 +373,7 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Adicionar nova pessoa"),
         "addOnPageSubtitle":
             MessageLookupByLibrary.simpleMessage("Detalhes dos complementos"),
-        "addOnValidTill": m5,
+        "addOnValidTill": m6,
         "addOns": MessageLookupByLibrary.simpleMessage("Complementos"),
         "addParticipants":
             MessageLookupByLibrary.simpleMessage("Adicionar participante"),

@@ -277,7 +277,7 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Dodaj nową osobę"),
         "addOnPageSubtitle":
             MessageLookupByLibrary.simpleMessage("Szczegóły dodatków"),
-        "addOnValidTill": m5,
+        "addOnValidTill": m6,
         "addOns": MessageLookupByLibrary.simpleMessage("Dodatki"),
         "addPhotos": MessageLookupByLibrary.simpleMessage("Dodaj zdjęcia"),
         "addSelected": MessageLookupByLibrary.simpleMessage("Dodaj zaznaczone"),
@@ -1607,10 +1607,6 @@ class MessageLookup extends MessageLookupByLibrary {
                 "Wybrane elementy zostaną usunięte ze wszystkich albumów i przeniesione do kosza."),
         "selectedPhotos": m80,
         "selectedPhotosWithYours": m81,
-        "send": MessageLookupByLibrary.simpleMessage("Wyślij"),
-        "sendEmail": MessageLookupByLibrary.simpleMessage("Wyślij e-mail"),
-        "sendInvite":
-            MessageLookupByLibrary.simpleMessage("Wyślij zaproszenie"),
         "sendLink": MessageLookupByLibrary.simpleMessage("Wyślij link"),
         "serverEndpoint":
             MessageLookupByLibrary.simpleMessage("Punkt końcowy serwera"),

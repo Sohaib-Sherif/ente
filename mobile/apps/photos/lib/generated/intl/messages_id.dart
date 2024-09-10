@@ -1258,6 +1258,7 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Dibagikan dengan kamu"),
         "sharing": MessageLookupByLibrary.simpleMessage("Membagikan..."),
         "showMemories": MessageLookupByLibrary.simpleMessage("Lihat kenangan"),
+        "showPerson": MessageLookupByLibrary.simpleMessage("Show person"),
         "signOutFromOtherDevices": MessageLookupByLibrary.simpleMessage(
             "Keluarkan akun dari perangkat lain"),
         "signOutOtherBody": MessageLookupByLibrary.simpleMessage(

@@ -28,7 +28,7 @@ class MessageLookup extends MessageLookupByLibrary {
   static String m2(count) =>
       "${Intl.plural(count, one: 'Añadir objeto', other: 'Añadir objetos')}";
 
-  static String m5(storageAmount, endDate) =>
+  static String m6(storageAmount, endDate) =>
       "Tu ${storageAmount} adicional es válido hasta ${endDate}";
 
   static String m4(count) =>
@@ -350,7 +350,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "addFiles": MessageLookupByLibrary.simpleMessage("Añadir archivos"),
         "addFromDevice": MessageLookupByLibrary.simpleMessage(
             "Agregar desde el dispositivo"),
-        "addItem": m4,
+        "addItem": m5,
         "addLocation":
             MessageLookupByLibrary.simpleMessage("Agregar ubicación"),
         "addLocationButton": MessageLookupByLibrary.simpleMessage("Añadir"),
@@ -363,7 +363,7 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Añadir nueva persona"),
         "addOnPageSubtitle": MessageLookupByLibrary.simpleMessage(
             "Detalles de los complementos"),
-        "addOnValidTill": m5,
+        "addOnValidTill": m6,
         "addOns": MessageLookupByLibrary.simpleMessage("Complementos"),
         "addPhotos": MessageLookupByLibrary.simpleMessage("Agregar fotos"),
         "addSelected":

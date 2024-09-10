@@ -22,6 +22,12 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m115(name) => "Wish \$${name} a happy birthday! 🎉";
 
+  static String m0(count) =>
+      "${Intl.plural(count, zero: 'Add collaborator', one: 'Add collaborator', other: 'Add collaborators')}";
+
+  static String m1(count) =>
+      "${Intl.plural(count, zero: 'Add viewer', one: 'Add viewer', other: 'Add viewers')}";
+
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) =>
       <String, Function>{"wishThemAHappyBirthday": m115};

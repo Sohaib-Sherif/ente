@@ -28,7 +28,7 @@ class MessageLookup extends MessageLookupByLibrary {
   static String m2(count) =>
       "${Intl.plural(count, one: 'Öğe ekle', other: 'Öğeler ekle')}";
 
-  static String m5(storageAmount, endDate) =>
+  static String m6(storageAmount, endDate) =>
       "${storageAmount} eklentiniz ${endDate} tarihine kadar geçerlidir";
 
   static String m4(count) =>
@@ -359,7 +359,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "addCollaborators": m1,
         "addFiles": MessageLookupByLibrary.simpleMessage("Dosyaları Ekle"),
         "addFromDevice": MessageLookupByLibrary.simpleMessage("Cihazdan ekle"),
-        "addItem": m4,
+        "addItem": m5,
         "addLocation": MessageLookupByLibrary.simpleMessage("Konum Ekle"),
         "addLocationButton": MessageLookupByLibrary.simpleMessage("Ekle"),
         "addMore": MessageLookupByLibrary.simpleMessage("Daha fazla ekle"),
@@ -370,7 +370,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "addNewPerson": MessageLookupByLibrary.simpleMessage("Yeni kişi ekle"),
         "addOnPageSubtitle":
             MessageLookupByLibrary.simpleMessage("Eklentilerin ayrıntıları"),
-        "addOnValidTill": m5,
+        "addOnValidTill": m6,
         "addOns": MessageLookupByLibrary.simpleMessage("Eklentiler"),
         "addParticipants":
             MessageLookupByLibrary.simpleMessage("Katılımcı ekle"),

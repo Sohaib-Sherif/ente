@@ -785,6 +785,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "sharedWithMe": MessageLookupByLibrary.simpleMessage("שותף איתי"),
         "sharing": MessageLookupByLibrary.simpleMessage("משתף..."),
         "showMemories": MessageLookupByLibrary.simpleMessage("הצג זכרונות"),
+        "showPerson": MessageLookupByLibrary.simpleMessage("Show person"),
         "signUpTerms": MessageLookupByLibrary.simpleMessage(
             "אני מסכים ל<u-terms>תנאי שירות</u-terms> ול<u-policy>מדיניות הפרטיות</u-policy>"),
         "singleFileDeleteFromDevice": m88,
