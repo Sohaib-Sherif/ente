@@ -132,7 +132,11 @@ class _CodeWidgetState extends State<CodeWidget> {
                     ? const Size(24, 24)
                     : const Size(39, 39),
               ),
+              size: widget.isCompactMode
+                  ? const Size(24, 24)
+                  : const Size(39, 39),
             ),
+          ),
           if (widget.code.isTrashed && kDebugMode)
             Align(
               alignment: Alignment.topLeft,
@@ -320,6 +324,11 @@ class _CodeWidgetState extends State<CodeWidget> {
               ),
               child: clippedCard(l10n),
             );
+          }
+          final double slideSpace = widget.isCompactMode ? 4 : 8;
+          double extendRatio = widget.isCompactMode ? 0.70 : 0.90;
+          if (widget.code.isTrashed) {
+            extendRatio = 0.50;
           }
 
           return clippedCard(l10n);
