@@ -28,18 +28,14 @@ class MessageLookup extends MessageLookupByLibrary {
   static String m2(count) =>
       "${Intl.plural(count, one: 'Öğe ekle', other: 'Öğeler ekle')}";
 
-  static String m6(storageAmount, endDate) =>
+  static String m5(storageAmount, endDate) =>
       "${storageAmount} eklentiniz ${endDate} tarihine kadar geçerlidir";
 
   static String m4(count) =>
       "${Intl.plural(count, zero: 'Görüntüleyen ekle', one: 'Görüntüleyen ekle', other: 'Görüntüleyen ekle')}";
 
   static String m5(emailOrName) => "${emailOrName} tarafından eklendi";
-
   static String m6(albumName) => "${albumName} albümüne başarıyla eklendi";
-
-  static String m7(name) => "${name}\'e hayran kalmak";
-
   static String m8(count) =>
       "${Intl.plural(count, zero: 'Katılımcı Yok', one: '1 Katılımcı', other: '${count} Katılımcı')}";
 
@@ -152,13 +148,8 @@ class MessageLookup extends MessageLookupByLibrary {
       "Bu bağlantı ${expiryTime} tarihinden itibaren geçersiz olacaktır";
 
   static String m48(email) => "Kişiyi ${email} adresine bağlayın";
-
   static String m49(personName, email) =>
       "Bu, ${personName} ile ${email} arasında bağlantı kuracaktır.";
-
-  static String m50(count, formattedCount) =>
-      "${Intl.plural(count, zero: 'hiç anı yok', other: '${formattedCount} anı')}";
-
   static String m51(count) =>
       "${Intl.plural(count, one: 'Öğeyi taşı', other: 'Öğeleri taşı')}";
 
@@ -359,7 +350,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "addCollaborators": m1,
         "addFiles": MessageLookupByLibrary.simpleMessage("Dosyaları Ekle"),
         "addFromDevice": MessageLookupByLibrary.simpleMessage("Cihazdan ekle"),
-        "addItem": m5,
+        "addItem": m4,
         "addLocation": MessageLookupByLibrary.simpleMessage("Konum Ekle"),
         "addLocationButton": MessageLookupByLibrary.simpleMessage("Ekle"),
         "addMore": MessageLookupByLibrary.simpleMessage("Daha fazla ekle"),
@@ -370,7 +361,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "addNewPerson": MessageLookupByLibrary.simpleMessage("Yeni kişi ekle"),
         "addOnPageSubtitle":
             MessageLookupByLibrary.simpleMessage("Eklentilerin ayrıntıları"),
-        "addOnValidTill": m6,
+        "addOnValidTill": m5,
         "addOns": MessageLookupByLibrary.simpleMessage("Eklentiler"),
         "addParticipants":
             MessageLookupByLibrary.simpleMessage("Katılımcı ekle"),

@@ -103,12 +103,7 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m55(familyAdminEmail) =>
       "Harap hubungi ${familyAdminEmail} untuk mengubah kode kamu.";
-
   static String m57(passwordStrengthValue) =>
-      "Keamanan sandi: ${passwordStrengthValue}";
-
-  static String m58(providerName) =>
-      "Harap hubungi dukungan ${providerName} jika kamu dikenai biaya";
 
   static String m63(endDate) =>
       "Percobaan gratis berlaku hingga ${endDate}.\nKamu dapat memilih paket berbayar setelahnya.";
@@ -1258,7 +1253,6 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Dibagikan dengan kamu"),
         "sharing": MessageLookupByLibrary.simpleMessage("Membagikan..."),
         "showMemories": MessageLookupByLibrary.simpleMessage("Lihat kenangan"),
-        "showPerson": MessageLookupByLibrary.simpleMessage("Show person"),
         "signOutFromOtherDevices": MessageLookupByLibrary.simpleMessage(
             "Keluarkan akun dari perangkat lain"),
         "signOutOtherBody": MessageLookupByLibrary.simpleMessage(

@@ -1828,10 +1828,8 @@ class MessageLookup extends MessageLookupByLibrary {
         "yearShort": MessageLookupByLibrary.simpleMessage("年"),
         "yearly": MessageLookupByLibrary.simpleMessage("年額"),
         "yearsAgo": m116,
+        "yearsAgo": m72,
         "yes": MessageLookupByLibrary.simpleMessage("はい"),
-        "yesCancel": MessageLookupByLibrary.simpleMessage("キャンセル"),
-        "yesConvertToViewer":
-            MessageLookupByLibrary.simpleMessage("ビューアーに変換する"),
         "yesDelete": MessageLookupByLibrary.simpleMessage("はい、削除"),
         "yesDiscardChanges":
             MessageLookupByLibrary.simpleMessage("はい、変更を破棄します。"),

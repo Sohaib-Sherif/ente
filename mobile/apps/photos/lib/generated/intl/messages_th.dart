@@ -293,7 +293,6 @@ class MessageLookup extends MessageLookupByLibrary {
         "share": MessageLookupByLibrary.simpleMessage("แชร์"),
         "shareALink": MessageLookupByLibrary.simpleMessage("แชร์​ลิงก์"),
         "shareLink": MessageLookupByLibrary.simpleMessage("แชร์​ลิงก์"),
-        "showPerson": MessageLookupByLibrary.simpleMessage("Show person"),
         "signUpTerms": MessageLookupByLibrary.simpleMessage(
             "ฉันยอมรับ<u-terms>เงื่อนไขการให้บริการ</u-terms>และ<u-policy>นโยบายความเป็นส่วนตัว</u-policy>"),
         "skip": MessageLookupByLibrary.simpleMessage("ข้าม"),

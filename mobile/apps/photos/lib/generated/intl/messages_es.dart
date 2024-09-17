@@ -28,7 +28,7 @@ class MessageLookup extends MessageLookupByLibrary {
   static String m2(count) =>
       "${Intl.plural(count, one: 'Añadir objeto', other: 'Añadir objetos')}";
 
-  static String m6(storageAmount, endDate) =>
+  static String m5(storageAmount, endDate) =>
       "Tu ${storageAmount} adicional es válido hasta ${endDate}";
 
   static String m4(count) =>
@@ -350,7 +350,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "addFiles": MessageLookupByLibrary.simpleMessage("Añadir archivos"),
         "addFromDevice": MessageLookupByLibrary.simpleMessage(
             "Agregar desde el dispositivo"),
-        "addItem": m5,
+        "addItem": m4,
         "addLocation":
             MessageLookupByLibrary.simpleMessage("Agregar ubicación"),
         "addLocationButton": MessageLookupByLibrary.simpleMessage("Añadir"),
@@ -363,7 +363,7 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Añadir nueva persona"),
         "addOnPageSubtitle": MessageLookupByLibrary.simpleMessage(
             "Detalles de los complementos"),
-        "addOnValidTill": m6,
+        "addOnValidTill": m5,
         "addOns": MessageLookupByLibrary.simpleMessage("Complementos"),
         "addPhotos": MessageLookupByLibrary.simpleMessage("Agregar fotos"),
         "addSelected":
@@ -1950,11 +1950,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "spotlightOnYourself":
             MessageLookupByLibrary.simpleMessage("Enfócate a ti mismo"),
         "startAccountRecoveryTitle":
-            MessageLookupByLibrary.simpleMessage("Iniciar la recuperación"),
         "startBackup":
-            MessageLookupByLibrary.simpleMessage("Iniciar copia de seguridad"),
-        "status": MessageLookupByLibrary.simpleMessage("Estado"),
-        "stopCastingBody": MessageLookupByLibrary.simpleMessage(
             "¿Quieres dejar de transmitir?"),
         "stopCastingTitle":
             MessageLookupByLibrary.simpleMessage("Detener la transmisión"),

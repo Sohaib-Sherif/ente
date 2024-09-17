@@ -71,55 +71,6 @@ class MessageLookup extends MessageLookupByLibrary {
   static String m47(expiryTime) => "תוקף הקישור יפוג ב-${expiryTime}";
 
   static String m57(passwordStrengthValue) =>
-      "חוזק הסיסמא: ${passwordStrengthValue}";
-
-  static String m58(providerName) =>
-      "אנא דבר עם התמיכה של ${providerName} אם אתה חוייבת";
-
-  static String m68(storeName) => "דרג אותנו ב-${storeName}";
-
-  static String m73(storageInGB) => "3. שניכים מקבלים ${storageInGB} GB* בחינם";
-
-  static String m74(userEmail) =>
-      "${userEmail} יוסר מהאלבום המשותף הזה\n\nגם תמונות שנוספו על ידיהם יוסרו מהאלבום";
-
-  static String m80(count) => "${count} נבחרו";
-
-  static String m81(count, yourCount) => "${count} נבחרו (${yourCount} שלך)";
-
-  static String m83(verificationID) =>
-      "הנה מזהה האימות שלי: ${verificationID} עבור ente.io.";
-
-  static String m84(verificationID) =>
-      "היי, תוכל לוודא שזה מזהה האימות שלך של ente.io: ${verificationID}";
-
-  static String m86(numberOfPeople) =>
-      "${Intl.plural(numberOfPeople, zero: 'שתף עם אנשים ספציפיים', one: 'שותף עם איש 1', two: 'שותף עם 2 אנשים', other: 'שותף עם ${numberOfPeople} אנשים')}";
-
-  static String m87(emailIDs) => "הושתף ע\"י ${emailIDs}";
-
-  static String m88(fileType) => "${fileType} יימחק מהמכשיר שלך.";
-
-  static String m93(storageAmountInGB) => "${storageAmountInGB} GB";
-
-  static String m96(endDate) => "המנוי שלך יבוטל ב-${endDate}";
-
-  static String m97(completed, total) => "${completed}/${total} זכרונות נשמרו";
-
-  static String m99(storageAmountInGB) => "הם גם יקבלו ${storageAmountInGB} GB";
-
-  static String m100(email) => "זה מזהה האימות של ${email}";
-
-  static String m111(email) => "אמת ${email}";
-
-  static String m114(email) => "שלחנו דוא\"ל ל<green>${email}</green>";
-
-  static String m115(name) => "Wish \$${name} a happy birthday! 🎉";
-
-  static String m116(count) =>
-      "${Intl.plural(count, one: 'לפני ${count} שנה', other: 'לפני ${count} שנים')}";
-
-  static String m118(storageSaved) => "הצלחת לפנות ${storageSaved}!";
 
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
@@ -785,7 +736,6 @@ class MessageLookup extends MessageLookupByLibrary {
         "sharedWithMe": MessageLookupByLibrary.simpleMessage("שותף איתי"),
         "sharing": MessageLookupByLibrary.simpleMessage("משתף..."),
         "showMemories": MessageLookupByLibrary.simpleMessage("הצג זכרונות"),
-        "showPerson": MessageLookupByLibrary.simpleMessage("Show person"),
         "signUpTerms": MessageLookupByLibrary.simpleMessage(
             "אני מסכים ל<u-terms>תנאי שירות</u-terms> ול<u-policy>מדיניות הפרטיות</u-policy>"),
         "singleFileDeleteFromDevice": m88,

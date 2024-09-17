@@ -25,10 +25,10 @@ class MessageLookup extends MessageLookupByLibrary {
   static String m1(count) =>
       "${Intl.plural(count, zero: 'Samenwerker toevoegen', one: 'Samenwerker toevoegen', other: 'Samenwerkers toevoegen')}";
 
-  static String m5(count) =>
+  static String m4(count) =>
       "${Intl.plural(count, one: 'Bestand toevoegen', other: 'Bestanden toevoegen')}";
 
-  static String m6(storageAmount, endDate) =>
+  static String m5(storageAmount, endDate) =>
       "Jouw ${storageAmount} add-on is geldig tot ${endDate}";
 
   static String m4(count) =>
@@ -364,7 +364,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "addFiles": MessageLookupByLibrary.simpleMessage("Bestanden toevoegen"),
         "addFromDevice":
             MessageLookupByLibrary.simpleMessage("Toevoegen vanaf apparaat"),
-        "addItem": m5,
+        "addItem": m4,
         "addLocation":
             MessageLookupByLibrary.simpleMessage("Locatie toevoegen"),
         "addLocationButton": MessageLookupByLibrary.simpleMessage("Toevoegen"),
@@ -379,7 +379,7 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Nieuw persoon toevoegen"),
         "addOnPageSubtitle":
             MessageLookupByLibrary.simpleMessage("Details van add-ons"),
-        "addOnValidTill": m6,
+        "addOnValidTill": m5,
         "addOns": MessageLookupByLibrary.simpleMessage("Add-ons"),
         "addParticipants":
             MessageLookupByLibrary.simpleMessage("Voeg deelnemers toe"),

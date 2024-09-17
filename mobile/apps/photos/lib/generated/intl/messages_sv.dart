@@ -426,16 +426,13 @@ class MessageLookup extends MessageLookupByLibrary {
         "mlConsentTitle":
             MessageLookupByLibrary.simpleMessage("Aktivera maskininlärning?"),
         "moderateStrength": MessageLookupByLibrary.simpleMessage("Måttligt"),
+        "moveItem": m37,
         "moveToAlbum":
             MessageLookupByLibrary.simpleMessage("Flytta till album"),
         "movingFilesToAlbum":
             MessageLookupByLibrary.simpleMessage("Flyttar filer till album..."),
         "name": MessageLookupByLibrary.simpleMessage("Namn"),
         "never": MessageLookupByLibrary.simpleMessage("Aldrig"),
-        "newAlbum": MessageLookupByLibrary.simpleMessage("Nytt album"),
-        "newPerson": MessageLookupByLibrary.simpleMessage("Ny person"),
-        "next": MessageLookupByLibrary.simpleMessage("Nästa"),
-        "no": MessageLookupByLibrary.simpleMessage("Nej"),
         "noDeviceLimit": MessageLookupByLibrary.simpleMessage("Ingen"),
         "noExifData": MessageLookupByLibrary.simpleMessage("Ingen EXIF-data"),
         "noInternetConnection":
@@ -489,12 +486,8 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Återställningsnyckel"),
         "recoveryKeyCopiedToClipboard": MessageLookupByLibrary.simpleMessage(
             "Återställningsnyckel kopierad till urklipp"),
-        "recoveryKeyOnForgotPassword": MessageLookupByLibrary.simpleMessage(
             "Om du glömmer ditt lösenord är det enda sättet du kan återställa dina data med denna nyckel."),
         "recoveryKeySaveDescription": MessageLookupByLibrary.simpleMessage(
-            "Vi lagrar inte och har därför inte åtkomst till denna nyckel, vänligen spara denna 24 ords nyckel på en säker plats."),
-        "recoveryKeySuccessBody": MessageLookupByLibrary.simpleMessage(
-            "Grymt! Din återställningsnyckel är giltig. Tack för att du verifierade.\n\nKom ihåg att hålla din återställningsnyckel säker med backups."),
         "recoveryKeyVerified": MessageLookupByLibrary.simpleMessage(
             "Återställningsnyckel verifierad"),
         "recoveryKeyVerifyReason": MessageLookupByLibrary.simpleMessage(
@@ -553,10 +546,8 @@ class MessageLookup extends MessageLookupByLibrary {
         "searchAlbumsEmptySection":
             MessageLookupByLibrary.simpleMessage("Album"),
         "searchByAlbumNameHint":
-            MessageLookupByLibrary.simpleMessage("Albumnamn"),
         "searchFileTypesAndNamesEmptySection":
             MessageLookupByLibrary.simpleMessage("Filtyper och namn"),
-        "searchResultCount": m77,
         "selectAlbum": MessageLookupByLibrary.simpleMessage("Välj album"),
         "selectAll": MessageLookupByLibrary.simpleMessage("Markera allt"),
         "selectFoldersForBackup": MessageLookupByLibrary.simpleMessage(
@@ -593,9 +584,6 @@ class MessageLookup extends MessageLookupByLibrary {
             "Skapa delade och samarbetande album med andra Ente användare, inklusive användare med gratisnivån."),
         "showLessFaces":
             MessageLookupByLibrary.simpleMessage("Show less faces"),
-        "showMemories": MessageLookupByLibrary.simpleMessage("Visa minnen"),
-        "showMoreFaces":
-            MessageLookupByLibrary.simpleMessage("Show more faces"),
         "showPerson": MessageLookupByLibrary.simpleMessage("Visa person"),
         "signUpTerms": MessageLookupByLibrary.simpleMessage(
             "Jag samtycker till <u-terms>användarvillkoren</u-terms> och <u-policy>integritetspolicyn</u-policy>"),
@@ -658,6 +646,7 @@ class MessageLookup extends MessageLookupByLibrary {
             "För att återställa ditt lösenord måste du först bekräfta din e-postadress."),
         "total": MessageLookupByLibrary.simpleMessage("totalt"),
         "trash": MessageLookupByLibrary.simpleMessage("Papperskorg"),
+        "trashDaysLeft": m67,
         "tryAgain": MessageLookupByLibrary.simpleMessage("Försök igen"),
         "twitter": MessageLookupByLibrary.simpleMessage("Twitter"),
         "twofactorAuthenticationHasBeenDisabled":

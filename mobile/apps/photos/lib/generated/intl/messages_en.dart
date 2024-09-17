@@ -25,10 +25,10 @@ class MessageLookup extends MessageLookupByLibrary {
   static String m1(count) =>
       "${Intl.plural(count, zero: 'Add collaborator', one: 'Add collaborator', other: 'Add collaborators')}";
 
-  static String m5(count) =>
+  static String m4(count) =>
       "${Intl.plural(count, one: 'Add item', other: 'Add items')}";
 
-  static String m6(storageAmount, endDate) =>
+  static String m5(storageAmount, endDate) =>
       "Your ${storageAmount} add-on is valid till ${endDate}";
 
   static String m4(count) =>
@@ -358,9 +358,6 @@ class MessageLookup extends MessageLookupByLibrary {
         "addCollaborators": m1,
         "addFiles": MessageLookupByLibrary.simpleMessage("Add Files"),
         "addFromDevice":
-            MessageLookupByLibrary.simpleMessage("Add from device"),
-        "addItem": m5,
-        "addLocation": MessageLookupByLibrary.simpleMessage("Add location"),
         "addLocationButton": MessageLookupByLibrary.simpleMessage("Add"),
         "addMemoriesWidgetPrompt": MessageLookupByLibrary.simpleMessage(
             "Add a memories widget to your homescreen and come back here to customize."),
@@ -372,7 +369,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "addNewPerson": MessageLookupByLibrary.simpleMessage("Add new person"),
         "addOnPageSubtitle":
             MessageLookupByLibrary.simpleMessage("Details of add-ons"),
-        "addOnValidTill": m6,
+        "addOnValidTill": m5,
         "addOns": MessageLookupByLibrary.simpleMessage("Add-ons"),
         "addParticipants":
             MessageLookupByLibrary.simpleMessage("Add participants"),
