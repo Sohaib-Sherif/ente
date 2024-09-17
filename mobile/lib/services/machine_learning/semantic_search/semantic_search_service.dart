@@ -185,7 +185,6 @@ class SemanticSearchService {
   ) async {
     final results =
         await getMatchingFiles(query, similarityThreshold: minimumSimilarity);
-
     final matchingFileIDs = <int>[];
     for (EnteFile file in results) {
       matchingFileIDs.add(file.uploadedFileID!);
