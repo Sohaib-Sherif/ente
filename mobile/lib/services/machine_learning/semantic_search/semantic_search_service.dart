@@ -179,7 +179,7 @@ class SemanticSearchService {
     return results;
   }
 
-  Future<Set<int>> getMatchingFileIDs(
+  Future<List<int>> getMatchingFileIDs(
     String query,
     double minimumSimilarity,
   ) async {
@@ -188,7 +188,7 @@ class SemanticSearchService {
       textEmbedding,
       minimumSimilarity: minimumSimilarity,
     );
-    final result = <int>{};
+    final result = <int>[];
     for (final r in queryResults) {
       result.add(r.id);
     }
