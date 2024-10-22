@@ -25,10 +25,10 @@ class MessageLookup extends MessageLookupByLibrary {
   static String m1(count) =>
       "${Intl.plural(count, zero: 'Samenwerker toevoegen', one: 'Samenwerker toevoegen', other: 'Samenwerkers toevoegen')}";
 
-  static String m4(count) =>
+  static String m6(count) =>
       "${Intl.plural(count, one: 'Bestand toevoegen', other: 'Bestanden toevoegen')}";
 
-  static String m5(storageAmount, endDate) =>
+  static String m7(storageAmount, endDate) =>
       "Jouw ${storageAmount} add-on is geldig tot ${endDate}";
 
   static String m4(count) =>
@@ -53,10 +53,10 @@ class MessageLookup extends MessageLookupByLibrary {
   static String m12(paymentProvider) =>
       "Annuleer eerst uw bestaande abonnement bij ${paymentProvider}";
 
-  static String m13(user) =>
+  static String m15(user) =>
       "${user} zal geen foto\'s meer kunnen toevoegen aan dit album\n\nDe gebruiker zal nog steeds bestaande foto\'s kunnen verwijderen die door hen zijn toegevoegd";
 
-  static String m14(isFamilyMember, storageAmountInGb) =>
+  static String m16(isFamilyMember, storageAmountInGb) =>
       "${Intl.select(isFamilyMember, {
             'true':
                 'Jouw familie heeft ${storageAmountInGb} GB geclaimd tot nu toe',
@@ -64,7 +64,7 @@ class MessageLookup extends MessageLookupByLibrary {
             'other': 'Je hebt ${storageAmountInGb} GB geclaimd tot nu toe!',
           })}";
 
-  static String m15(albumName) =>
+  static String m17(albumName) =>
       "Gezamenlijke link aangemaakt voor ${albumName}";
 
   static String m16(count) =>
@@ -364,7 +364,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "addFiles": MessageLookupByLibrary.simpleMessage("Bestanden toevoegen"),
         "addFromDevice":
             MessageLookupByLibrary.simpleMessage("Toevoegen vanaf apparaat"),
-        "addItem": m4,
+        "addItem": m6,
         "addLocation":
             MessageLookupByLibrary.simpleMessage("Locatie toevoegen"),
         "addLocationButton": MessageLookupByLibrary.simpleMessage("Toevoegen"),
@@ -379,7 +379,7 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Nieuw persoon toevoegen"),
         "addOnPageSubtitle":
             MessageLookupByLibrary.simpleMessage("Details van add-ons"),
-        "addOnValidTill": m5,
+        "addOnValidTill": m7,
         "addOns": MessageLookupByLibrary.simpleMessage("Add-ons"),
         "addParticipants":
             MessageLookupByLibrary.simpleMessage("Voeg deelnemers toe"),
@@ -594,7 +594,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "cancelOtherSubscription": m12,
         "cancelSubscription":
             MessageLookupByLibrary.simpleMessage("Abonnement opzeggen"),
-        "cannotAddMorePhotosAfterBecomingViewer": m13,
+        "cannotAddMorePhotosAfterBecomingViewer": m15,
         "cannotDeleteSharedFiles": MessageLookupByLibrary.simpleMessage(
             "Kan gedeelde bestanden niet verwijderen"),
         "castAlbum": MessageLookupByLibrary.simpleMessage("Album casten"),
@@ -631,7 +631,7 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Claim gratis opslag"),
         "claimMore": MessageLookupByLibrary.simpleMessage("Claim meer!"),
         "claimed": MessageLookupByLibrary.simpleMessage("Geclaimd"),
-        "claimedStorageSoFar": m14,
+        "claimedStorageSoFar": m16,
         "cleanUncategorized":
             MessageLookupByLibrary.simpleMessage("Ongecategoriseerd opschonen"),
         "cleanUncategorizedDescription": MessageLookupByLibrary.simpleMessage(
@@ -662,7 +662,7 @@ class MessageLookup extends MessageLookupByLibrary {
             "Maak een link waarmee mensen foto\'s in jouw gedeelde album kunnen toevoegen en bekijken zonder dat ze daarvoor een Ente app of account nodig hebben. Handig voor het verzamelen van foto\'s van evenementen."),
         "collaborativeLink":
             MessageLookupByLibrary.simpleMessage("Gezamenlijke link"),
-        "collaborativeLinkCreatedFor": m15,
+        "collaborativeLinkCreatedFor": m17,
         "collaborator": MessageLookupByLibrary.simpleMessage("Samenwerker"),
         "collaboratorsCanAddPhotosAndVideosToTheSharedAlbum":
             MessageLookupByLibrary.simpleMessage(
@@ -1432,7 +1432,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "onDevice": MessageLookupByLibrary.simpleMessage("Op het apparaat"),
         "onEnte": MessageLookupByLibrary.simpleMessage(
             "Op <branding>ente</branding>"),
-        "onTheRoad": MessageLookupByLibrary.simpleMessage("Onderweg"),
+        s"onTheRoad": MessageLookupByLibrary.simpleMessage("Onderweg"),
         "onThisDay": MessageLookupByLibrary.simpleMessage("Op deze dag"),
         "onThisDayMemories":
             MessageLookupByLibrary.simpleMessage("Op deze dag herinneringen"),

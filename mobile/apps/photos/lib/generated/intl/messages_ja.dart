@@ -44,17 +44,17 @@ class MessageLookup extends MessageLookupByLibrary {
   static String m12(paymentProvider) =>
       "まず${paymentProvider} から既存のサブスクリプションをキャンセルしてください";
 
-  static String m13(user) =>
+  static String m15(user) =>
       "${user} は写真をアルバムに追加できなくなります\n\n※${user} が追加した写真は今後も${user} が削除できます";
 
-  static String m14(isFamilyMember, storageAmountInGb) =>
+  static String m16(isFamilyMember, storageAmountInGb) =>
       "${Intl.select(isFamilyMember, {
             'true': '家族は ${storageAmountInGb} GB 受け取っています',
             'false': 'あなたは ${storageAmountInGb} GB 受け取っています',
             'other': 'あなたは ${storageAmountInGb} GB受け取っています',
           })}";
 
-  static String m15(albumName) => "${albumName} のコラボレーションリンクを生成しました";
+  static String m17(albumName) => "${albumName} のコラボレーションリンクを生成しました";
 
   static String m16(count) =>
       "${Intl.plural(count, zero: '${count}人のコラボレーターを追加', one: '${count}人のコラボレーターを追加', other: '${count}人のコラボレーターを追加')}";
@@ -498,7 +498,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "cancelOtherSubscription": m12,
         "cancelSubscription":
             MessageLookupByLibrary.simpleMessage("サブスクリプションをキャンセル"),
-        "cannotAddMorePhotosAfterBecomingViewer": m13,
+        "cannotAddMorePhotosAfterBecomingViewer": m15,
         "cannotDeleteSharedFiles":
             MessageLookupByLibrary.simpleMessage("共有ファイルは削除できません"),
         "castAlbum": MessageLookupByLibrary.simpleMessage("アルバムをキャスト"),
@@ -530,7 +530,7 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("無料のストレージを受け取る"),
         "claimMore": MessageLookupByLibrary.simpleMessage("もっと！"),
         "claimed": MessageLookupByLibrary.simpleMessage("受け取り済"),
-        "claimedStorageSoFar": m14,
+        "claimedStorageSoFar": m16,
         "cleanUncategorized":
             MessageLookupByLibrary.simpleMessage("未分類のクリーンアップ"),
         "cleanUncategorizedDescription": MessageLookupByLibrary.simpleMessage(
@@ -555,7 +555,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "collabLinkSectionDescription": MessageLookupByLibrary.simpleMessage(
             "Enteアプリやアカウントを持っていない人にも、共有アルバムに写真を追加したり表示したりできるリンクを作成します。"),
         "collaborativeLink": MessageLookupByLibrary.simpleMessage("共同作業リンク"),
-        "collaborativeLinkCreatedFor": m15,
+        "collaborativeLinkCreatedFor": m17,
         "collaborator": MessageLookupByLibrary.simpleMessage("コラボレーター"),
         "collaboratorsCanAddPhotosAndVideosToTheSharedAlbum":
             MessageLookupByLibrary.simpleMessage(

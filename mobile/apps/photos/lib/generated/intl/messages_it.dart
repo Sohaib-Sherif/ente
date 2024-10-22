@@ -53,10 +53,10 @@ class MessageLookup extends MessageLookupByLibrary {
   static String m12(paymentProvider) =>
       "Annulla prima il tuo abbonamento esistente da ${paymentProvider}";
 
-  static String m13(user) =>
+  static String m15(user) =>
       "${user} non sarà più in grado di aggiungere altre foto a questo album\n\nSarà ancora in grado di rimuovere le foto esistenti aggiunte da lui o lei";
 
-  static String m14(isFamilyMember, storageAmountInGb) =>
+  static String m16(isFamilyMember, storageAmountInGb) =>
       "${Intl.select(isFamilyMember, {
             'true':
                 'Il tuo piano famiglia ha già richiesto ${storageAmountInGb} GB finora',
@@ -64,7 +64,7 @@ class MessageLookup extends MessageLookupByLibrary {
             'other': 'Hai già richiesto ${storageAmountInGb} GB finora!',
           })}";
 
-  static String m15(albumName) => "Link collaborativo creato per ${albumName}";
+  static String m17(albumName) => "Link collaborativo creato per ${albumName}";
 
   static String m16(count) =>
       "${Intl.plural(count, zero: 'Aggiunti 0 collaboratori', one: 'Aggiunto 1 collaboratore', other: 'Aggiunti ${count} collaboratori')}";
@@ -359,7 +359,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "addFiles": MessageLookupByLibrary.simpleMessage("Aggiungi File"),
         "addFromDevice":
             MessageLookupByLibrary.simpleMessage("Aggiungi dal dispositivo"),
-        "addItem": m4,
+        "addItem": m6,
         "addLocation": MessageLookupByLibrary.simpleMessage("Aggiungi luogo"),
         "addLocationButton": MessageLookupByLibrary.simpleMessage("Aggiungi"),
         "addMemoriesWidgetPrompt": MessageLookupByLibrary.simpleMessage(
@@ -617,7 +617,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "cancelOtherSubscription": m12,
         "cancelSubscription":
             MessageLookupByLibrary.simpleMessage("Annulla abbonamento"),
-        "cannotAddMorePhotosAfterBecomingViewer": m13,
+        "cannotAddMorePhotosAfterBecomingViewer": m15,
         "cannotDeleteSharedFiles": MessageLookupByLibrary.simpleMessage(
             "Impossibile eliminare i file condivisi"),
         "castAlbum": MessageLookupByLibrary.simpleMessage("Trasmetti album"),
@@ -654,7 +654,7 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Richiedi spazio gratuito"),
         "claimMore": MessageLookupByLibrary.simpleMessage("Richiedine di più!"),
         "claimed": MessageLookupByLibrary.simpleMessage("Riscattato"),
-        "claimedStorageSoFar": m14,
+        "claimedStorageSoFar": m16,
         "cleanUncategorized":
             MessageLookupByLibrary.simpleMessage("Pulisci Senza Categoria"),
         "cleanUncategorizedDescription": MessageLookupByLibrary.simpleMessage(
@@ -685,7 +685,7 @@ class MessageLookup extends MessageLookupByLibrary {
             "Crea un link per consentire alle persone di aggiungere e visualizzare foto nel tuo album condiviso senza bisogno di un\'applicazione o di un account Ente. Ottimo per raccogliere foto di un evento."),
         "collaborativeLink":
             MessageLookupByLibrary.simpleMessage("Link collaborativo"),
-        "collaborativeLinkCreatedFor": m15,
+        "collaborativeLinkCreatedFor": m17,
         "collaborator": MessageLookupByLibrary.simpleMessage("Collaboratore"),
         "collaboratorsCanAddPhotosAndVideosToTheSharedAlbum":
             MessageLookupByLibrary.simpleMessage(

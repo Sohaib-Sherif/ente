@@ -23,13 +23,13 @@ class MessageLookup extends MessageLookupByLibrary {
   static String m8(count) =>
       "${Intl.plural(count, zero: 'אין משתתפים', one: '1 משתתף', two: '2 משתתפים', other: '${count} משתתפים')}";
 
-  static String m12(paymentProvider) =>
+  static String m14(paymentProvider) =>
       "אנא בטל את המנוי הקיים מ-${paymentProvider} קודם";
 
-  static String m13(user) =>
+  static String m15(user) =>
       "${user} לא יוכל להוסיף עוד תמונות לאלבום זה\n\nהם עדיין יכולו להסיר תמונות קיימות שנוספו על ידיהם";
 
-  static String m14(isFamilyMember, storageAmountInGb) =>
+  static String m16(isFamilyMember, storageAmountInGb) =>
       "${Intl.select(isFamilyMember, {
             'true': 'קיבלת ${storageAmountInGb} GB עד כה',
             'false': 'קיבלת ${storageAmountInGb} GB עד כה',
@@ -187,9 +187,9 @@ class MessageLookup extends MessageLookupByLibrary {
         "canOnlyRemoveFilesOwnedByYou": MessageLookupByLibrary.simpleMessage(
             "יכול להסיר רק קבצים שבבעלותך"),
         "cancel": MessageLookupByLibrary.simpleMessage("בטל"),
-        "cancelOtherSubscription": m12,
+        "cancelOtherSubscription": m14,
         "cancelSubscription": MessageLookupByLibrary.simpleMessage("בטל מנוי"),
-        "cannotAddMorePhotosAfterBecomingViewer": m13,
+        "cannotAddMorePhotosAfterBecomingViewer": m15,
         "cannotDeleteSharedFiles": MessageLookupByLibrary.simpleMessage(
             "לא ניתן למחוק את הקבצים המשותפים"),
         "changeEmail": MessageLookupByLibrary.simpleMessage("שנה דוא\"ל"),
@@ -205,7 +205,7 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("תבע מקום אחסון בחינם"),
         "claimMore": MessageLookupByLibrary.simpleMessage("תבע עוד!"),
         "claimed": MessageLookupByLibrary.simpleMessage("נתבע"),
-        "claimedStorageSoFar": m14,
+        "claimedStorageSoFar": m16,
         "click": MessageLookupByLibrary.simpleMessage("• לחץ"),
         "close": MessageLookupByLibrary.simpleMessage("סגור"),
         "clubByCaptureTime":

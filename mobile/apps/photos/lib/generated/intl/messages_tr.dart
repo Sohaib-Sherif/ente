@@ -28,7 +28,7 @@ class MessageLookup extends MessageLookupByLibrary {
   static String m2(count) =>
       "${Intl.plural(count, one: 'Öğe ekle', other: 'Öğeler ekle')}";
 
-  static String m5(storageAmount, endDate) =>
+  static String m7(storageAmount, endDate) =>
       "${storageAmount} eklentiniz ${endDate} tarihine kadar geçerlidir";
 
   static String m4(count) =>
@@ -46,20 +46,20 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m11(name) => "${name} ile güzel manzaralar";
 
-  static String m12(paymentProvider) =>
+  static String m14(paymentProvider) =>
       "Lütfen önce mevcut aboneliğinizi ${paymentProvider} adresinden iptal edin";
 
-  static String m13(user) =>
+  static String m15(user) =>
       "${user}, bu albüme daha fazla fotoğraf ekleyemeyecek.\n\nAncak, kendi eklediği mevcut fotoğrafları kaldırmaya devam edebilecektir";
 
-  static String m14(isFamilyMember, storageAmountInGb) =>
+  static String m16(isFamilyMember, storageAmountInGb) =>
       "${Intl.select(isFamilyMember, {
             'true': 'Şu ana kadar aileniz ${storageAmountInGb} GB aldı',
             'false': 'Şu ana kadar ${storageAmountInGb} GB aldınız',
             'other': 'Şu ana kadar ${storageAmountInGb} GB aldınız!',
           })}";
 
-  static String m15(albumName) =>
+  static String m17(albumName) =>
       "${albumName} için ortak çalışma bağlantısı oluşturuldu";
 
   static String m16(count) =>
@@ -350,7 +350,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "addCollaborators": m1,
         "addFiles": MessageLookupByLibrary.simpleMessage("Dosyaları Ekle"),
         "addFromDevice": MessageLookupByLibrary.simpleMessage("Cihazdan ekle"),
-        "addItem": m4,
+        "addItem": m6,
         "addLocation": MessageLookupByLibrary.simpleMessage("Konum Ekle"),
         "addLocationButton": MessageLookupByLibrary.simpleMessage("Ekle"),
         "addMore": MessageLookupByLibrary.simpleMessage("Daha fazla ekle"),
@@ -361,7 +361,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "addNewPerson": MessageLookupByLibrary.simpleMessage("Yeni kişi ekle"),
         "addOnPageSubtitle":
             MessageLookupByLibrary.simpleMessage("Eklentilerin ayrıntıları"),
-        "addOnValidTill": m5,
+        "addOnValidTill": m7,
         "addOns": MessageLookupByLibrary.simpleMessage("Eklentiler"),
         "addParticipants":
             MessageLookupByLibrary.simpleMessage("Katılımcı ekle"),
@@ -571,7 +571,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "cancelOtherSubscription": m12,
         "cancelSubscription":
             MessageLookupByLibrary.simpleMessage("Abonelik iptali"),
-        "cannotAddMorePhotosAfterBecomingViewer": m13,
+        "cannotAddMorePhotosAfterBecomingViewer": m15,
         "cannotDeleteSharedFiles":
             MessageLookupByLibrary.simpleMessage("Dosyalar silinemiyor"),
         "castAlbum": MessageLookupByLibrary.simpleMessage("Yayın albümü"),
@@ -609,7 +609,7 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Bedava alan kazanın"),
         "claimMore": MessageLookupByLibrary.simpleMessage("Arttır!"),
         "claimed": MessageLookupByLibrary.simpleMessage("Alındı"),
-        "claimedStorageSoFar": m14,
+        "claimedStorageSoFar": m16,
         "cleanUncategorized":
             MessageLookupByLibrary.simpleMessage("Temiz Genel"),
         "cleanUncategorizedDescription": MessageLookupByLibrary.simpleMessage(

@@ -38,10 +38,10 @@ class MessageLookup extends MessageLookupByLibrary {
   static String m12(paymentProvider) =>
       "Vă rugăm să vă anulați mai întâi abonamentul existent de la ${paymentProvider}";
 
-  static String m13(user) =>
+  static String m15(user) =>
       "${user} nu va putea să mai adauge fotografii la acest album\n\nVa putea să elimine fotografii existente adăugate de el/ea";
 
-  static String m14(isFamilyMember, storageAmountInGb) =>
+  static String m16(isFamilyMember, storageAmountInGb) =>
       "${Intl.select(isFamilyMember, {
             'true':
                 'Familia dvs. a revendicat ${storageAmountInGb} GB până acum',
@@ -480,7 +480,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "cancelOtherSubscription": m12,
         "cancelSubscription":
             MessageLookupByLibrary.simpleMessage("Anulare abonament"),
-        "cannotAddMorePhotosAfterBecomingViewer": m13,
+        "cannotAddMorePhotosAfterBecomingViewer": m15,
         "cannotDeleteSharedFiles": MessageLookupByLibrary.simpleMessage(
             "Nu se pot șterge fișierele distribuite"),
         "castAlbum": MessageLookupByLibrary.simpleMessage("Difuzați albumul"),

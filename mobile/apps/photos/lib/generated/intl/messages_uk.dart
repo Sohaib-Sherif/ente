@@ -38,17 +38,17 @@ class MessageLookup extends MessageLookupByLibrary {
   static String m12(paymentProvider) =>
       "Спочатку скасуйте вашу передплату від ${paymentProvider}";
 
-  static String m13(user) =>
+  static String m15(user) =>
       "${user} не зможе додавати більше фотографій до цього альбому\n\nВони все ще зможуть видаляти додані ними фотографії";
 
-  static String m14(isFamilyMember, storageAmountInGb) =>
+  static String m16(isFamilyMember, storageAmountInGb) =>
       "${Intl.select(isFamilyMember, {
             'true': 'Ваша сім\'я отримала ${storageAmountInGb} ГБ',
             'false': 'Ви отримали ${storageAmountInGb} ГБ',
             'other': 'Ви отримали ${storageAmountInGb} ГБ!',
           })}";
 
-  static String m15(albumName) =>
+  static String m17(albumName) =>
       "Створено спільне посилання для «${albumName}»";
 
   static String m17(email, numOfDays) =>
@@ -505,7 +505,7 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Отримайте безплатне сховище"),
         "claimMore": MessageLookupByLibrary.simpleMessage("Отримайте більше!"),
         "claimed": MessageLookupByLibrary.simpleMessage("Отримано"),
-        "claimedStorageSoFar": m14,
+        "claimedStorageSoFar": m16,
         "cleanUncategorized":
             MessageLookupByLibrary.simpleMessage("Очистити «Без категорії»"),
         "cleanUncategorizedDescription": MessageLookupByLibrary.simpleMessage(
@@ -535,7 +535,7 @@ class MessageLookup extends MessageLookupByLibrary {
             "Створіть посилання, щоб дозволити людям додавати й переглядати фотографії у вашому спільному альбомі без використання застосунку Ente або облікового запису. Чудово підходить для збору фотографій з подій."),
         "collaborativeLink":
             MessageLookupByLibrary.simpleMessage("Спільне посилання"),
-        "collaborativeLinkCreatedFor": m15,
+        "collaborativeLinkCreatedFor": m17,
         "collaborator": MessageLookupByLibrary.simpleMessage("Співавтор"),
         "collaboratorsCanAddPhotosAndVideosToTheSharedAlbum":
             MessageLookupByLibrary.simpleMessage(

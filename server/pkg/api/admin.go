@@ -3,12 +3,15 @@ package api
 import (
 	"errors"
 	"fmt"
-	"github.com/ente-io/museum/pkg/controller/emergency"
-	"github.com/ente-io/museum/pkg/controller/remotestore"
-	"github.com/ente-io/museum/pkg/repo/authenticator"
 	"net/http"
 	"strconv"
 	"strings"
+
+	"github.com/ente-io/museum/pkg/controller/emergency"
+	"github.com/ente-io/museum/pkg/controller/remotestore"
+	"github.com/ente-io/museum/pkg/repo/authenticator"
+
+	"github.com/ente-io/museum/pkg/controller/remotestore"
 
 	"github.com/ente-io/museum/pkg/controller/family"
 

@@ -28,7 +28,7 @@ class MessageLookup extends MessageLookupByLibrary {
   static String m10(freeAmount, storageUnit) =>
       "${freeAmount} ${storageUnit} gratis";
 
-  static String m13(user) =>
+  static String m15(user) =>
       "${user} kommer inte att kunna lägga till fler foton till detta album\n\nDe kommer fortfarande att kunna ta bort befintliga foton som lagts till av dem";
 
   static String m14(isFamilyMember, storageAmountInGb) =>
@@ -177,7 +177,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "canOnlyRemoveFilesOwnedByYou": MessageLookupByLibrary.simpleMessage(
             "Kan endast ta bort filer som ägs av dig"),
         "cancel": MessageLookupByLibrary.simpleMessage("Avbryt"),
-        "cannotAddMorePhotosAfterBecomingViewer": m13,
+        "cannotAddMorePhotosAfterBecomingViewer": m15,
         "change": MessageLookupByLibrary.simpleMessage("Ändra"),
         "changeEmail":
             MessageLookupByLibrary.simpleMessage("Ändra e-postadress"),
@@ -426,7 +426,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "mlConsentTitle":
             MessageLookupByLibrary.simpleMessage("Aktivera maskininlärning?"),
         "moderateStrength": MessageLookupByLibrary.simpleMessage("Måttligt"),
-        "moveItem": m37,
+        "moveItem": m39,
         "moveToAlbum":
             MessageLookupByLibrary.simpleMessage("Flytta till album"),
         "movingFilesToAlbum":
@@ -646,7 +646,7 @@ class MessageLookup extends MessageLookupByLibrary {
             "För att återställa ditt lösenord måste du först bekräfta din e-postadress."),
         "total": MessageLookupByLibrary.simpleMessage("totalt"),
         "trash": MessageLookupByLibrary.simpleMessage("Papperskorg"),
-        "trashDaysLeft": m67,
+        "trashDaysLeft": m68,
         "tryAgain": MessageLookupByLibrary.simpleMessage("Försök igen"),
         "twitter": MessageLookupByLibrary.simpleMessage("Twitter"),
         "twofactorAuthenticationHasBeenDisabled":

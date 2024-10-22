@@ -25,16 +25,15 @@ class MessageLookup extends MessageLookupByLibrary {
   static String m1(count) =>
       "${Intl.plural(count, zero: 'Add collaborator', one: 'Add collaborator', other: 'Add collaborators')}";
 
-  static String m4(count) =>
+  static String m6(count) =>
       "${Intl.plural(count, one: 'Add item', other: 'Add items')}";
 
-  static String m5(storageAmount, endDate) =>
+  static String m7(storageAmount, endDate) =>
       "Your ${storageAmount} add-on is valid till ${endDate}";
 
   static String m4(count) =>
       "${Intl.plural(count, zero: 'Add viewer', one: 'Add viewer', other: 'Add viewers')}";
 
-  static String m5(emailOrName) => "Added by ${emailOrName}";
 
   static String m6(albumName) => "Added successfully to  ${albumName}";
 
@@ -51,19 +50,16 @@ class MessageLookup extends MessageLookupByLibrary {
   static String m11(name) => "Beautiful views with ${name}";
 
   static String m12(paymentProvider) =>
-      "Please cancel your existing subscription from ${paymentProvider} first";
 
-  static String m13(user) =>
-      "${user} will not be able to add more photos to this album\n\nThey will still be able to remove existing photos added by them";
 
-  static String m14(isFamilyMember, storageAmountInGb) =>
+  static String m16(isFamilyMember, storageAmountInGb) =>
       "${Intl.select(isFamilyMember, {
             'true': 'Your family has claimed ${storageAmountInGb} GB so far',
             'false': 'You have claimed ${storageAmountInGb} GB so far',
             'other': 'You have claimed ${storageAmountInGb} GB so far!',
           })}";
 
-  static String m15(albumName) => "Collaborative link created for ${albumName}";
+  static String m17(albumName) => "Collaborative link created for ${albumName}";
 
   static String m16(count) =>
       "${Intl.plural(count, zero: 'Added 0 collaborator', one: 'Added 1 collaborator', other: 'Added ${count} collaborators')}";
@@ -369,7 +365,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "addNewPerson": MessageLookupByLibrary.simpleMessage("Add new person"),
         "addOnPageSubtitle":
             MessageLookupByLibrary.simpleMessage("Details of add-ons"),
-        "addOnValidTill": m5,
+        "addOnValidTill": m7,
         "addOns": MessageLookupByLibrary.simpleMessage("Add-ons"),
         "addParticipants":
             MessageLookupByLibrary.simpleMessage("Add participants"),
@@ -616,7 +612,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "cancelOtherSubscription": m12,
         "cancelSubscription":
             MessageLookupByLibrary.simpleMessage("Cancel subscription"),
-        "cannotAddMorePhotosAfterBecomingViewer": m13,
+        "cannotAddMorePhotosAfterBecomingViewer": m15,
         "cannotDeleteSharedFiles":
             MessageLookupByLibrary.simpleMessage("Cannot delete shared files"),
         "castAlbum": MessageLookupByLibrary.simpleMessage("Cast album"),
@@ -652,7 +648,7 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Claim free storage"),
         "claimMore": MessageLookupByLibrary.simpleMessage("Claim more!"),
         "claimed": MessageLookupByLibrary.simpleMessage("Claimed"),
-        "claimedStorageSoFar": m14,
+        "claimedStorageSoFar": m16,
         "cleanUncategorized":
             MessageLookupByLibrary.simpleMessage("Clean Uncategorized"),
         "cleanUncategorizedDescription": MessageLookupByLibrary.simpleMessage(
@@ -683,7 +679,7 @@ class MessageLookup extends MessageLookupByLibrary {
             "Create a link to allow people to add and view photos in your shared album without needing an Ente app or account. Great for collecting event photos."),
         "collaborativeLink":
             MessageLookupByLibrary.simpleMessage("Collaborative link"),
-        "collaborativeLinkCreatedFor": m15,
+        "collaborativeLinkCreatedFor": m17,
         "collaborator": MessageLookupByLibrary.simpleMessage("Collaborator"),
         "collaboratorsCanAddPhotosAndVideosToTheSharedAlbum":
             MessageLookupByLibrary.simpleMessage(

@@ -28,7 +28,7 @@ class MessageLookup extends MessageLookupByLibrary {
   static String m2(count) =>
       "${Intl.plural(count, one: 'Añadir objeto', other: 'Añadir objetos')}";
 
-  static String m5(storageAmount, endDate) =>
+  static String m7(storageAmount, endDate) =>
       "Tu ${storageAmount} adicional es válido hasta ${endDate}";
 
   static String m4(count) =>
@@ -50,13 +50,13 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m11(name) => "Preciosas vistas con ${name}";
 
-  static String m12(paymentProvider) =>
+  static String m14(paymentProvider) =>
       "Por favor, cancela primero tu suscripción existente de ${paymentProvider}";
 
-  static String m13(user) =>
+  static String m15(user) =>
       "${user} no podrá añadir más fotos a este álbum\n\nTodavía podrán eliminar las fotos ya añadidas por ellos";
 
-  static String m14(isFamilyMember, storageAmountInGb) =>
+  static String m16(isFamilyMember, storageAmountInGb) =>
       "${Intl.select(isFamilyMember, {
             'true':
                 'Tu familia ha obtenido ${storageAmountInGb} GB hasta el momento',
@@ -65,7 +65,7 @@ class MessageLookup extends MessageLookupByLibrary {
                 '¡Tú has obtenido ${storageAmountInGb} GB hasta el momento!',
           })}";
 
-  static String m15(albumName) =>
+  static String m17(albumName) =>
       "Enlace colaborativo creado para ${albumName}";
 
   static String m16(count) =>
@@ -350,7 +350,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "addFiles": MessageLookupByLibrary.simpleMessage("Añadir archivos"),
         "addFromDevice": MessageLookupByLibrary.simpleMessage(
             "Agregar desde el dispositivo"),
-        "addItem": m4,
+        "addItem": m6,
         "addLocation":
             MessageLookupByLibrary.simpleMessage("Agregar ubicación"),
         "addLocationButton": MessageLookupByLibrary.simpleMessage("Añadir"),
@@ -363,7 +363,7 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Añadir nueva persona"),
         "addOnPageSubtitle": MessageLookupByLibrary.simpleMessage(
             "Detalles de los complementos"),
-        "addOnValidTill": m5,
+        "addOnValidTill": m7,
         "addOns": MessageLookupByLibrary.simpleMessage("Complementos"),
         "addPhotos": MessageLookupByLibrary.simpleMessage("Agregar fotos"),
         "addSelected":
@@ -601,7 +601,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "cancelOtherSubscription": m12,
         "cancelSubscription":
             MessageLookupByLibrary.simpleMessage("Cancelar suscripción"),
-        "cannotAddMorePhotosAfterBecomingViewer": m13,
+        "cannotAddMorePhotosAfterBecomingViewer": m15,
         "cannotDeleteSharedFiles": MessageLookupByLibrary.simpleMessage(
             "No se pueden eliminar los archivos compartidos"),
         "castAlbum": MessageLookupByLibrary.simpleMessage("Enviar álbum"),
@@ -667,7 +667,7 @@ class MessageLookup extends MessageLookupByLibrary {
             "Crea un enlace para permitir que otros pueda añadir y ver fotos en tu álbum compartido sin necesitar la aplicación Ente o una cuenta. Genial para recolectar fotos de eventos."),
         "collaborativeLink":
             MessageLookupByLibrary.simpleMessage("Enlace colaborativo"),
-        "collaborativeLinkCreatedFor": m15,
+        "collaborativeLinkCreatedFor": m17,
         "collaborator": MessageLookupByLibrary.simpleMessage("Colaborador"),
         "collaboratorsCanAddPhotosAndVideosToTheSharedAlbum":
             MessageLookupByLibrary.simpleMessage(

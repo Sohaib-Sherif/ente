@@ -25,10 +25,10 @@ class MessageLookup extends MessageLookupByLibrary {
   static String m1(count) =>
       "${Intl.plural(count, zero: 'Bearbeiter hinzufügen', one: 'Bearbeiter hinzufügen', other: 'Bearbeiter hinzufügen')}";
 
-  static String m4(count) =>
+  static String m6(count) =>
       "${Intl.plural(count, one: 'Element hinzufügen', other: 'Elemente hinzufügen')}";
 
-  static String m5(storageAmount, endDate) =>
+  static String m7(storageAmount, endDate) =>
       "Dein ${storageAmount} Add-on ist gültig bis ${endDate}";
 
   static String m4(count) =>
@@ -53,10 +53,10 @@ class MessageLookup extends MessageLookupByLibrary {
   static String m12(paymentProvider) =>
       "Bitte kündige dein aktuelles Abo über ${paymentProvider} zuerst";
 
-  static String m13(user) =>
+  static String m15(user) =>
       "Der Nutzer \"${user}\" wird keine weiteren Fotos zum Album hinzufügen können.\n\nJedoch kann er weiterhin vorhandene Bilder, welche durch ihn hinzugefügt worden sind, wieder entfernen";
 
-  static String m14(isFamilyMember, storageAmountInGb) =>
+  static String m16(isFamilyMember, storageAmountInGb) =>
       "${Intl.select(isFamilyMember, {
             'true':
                 'Deine Familiengruppe hat bereits ${storageAmountInGb} GB erhalten',
@@ -64,7 +64,7 @@ class MessageLookup extends MessageLookupByLibrary {
             'other': 'Du hast bereits ${storageAmountInGb} GB erhalten!',
           })}";
 
-  static String m15(albumName) =>
+  static String m17(albumName) =>
       "Kollaborativer Link für ${albumName} erstellt";
 
   static String m16(count) =>
@@ -365,7 +365,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "addFiles": MessageLookupByLibrary.simpleMessage("Dateien hinzufügen"),
         "addFromDevice":
             MessageLookupByLibrary.simpleMessage("Vom Gerät hinzufügen"),
-        "addItem": m4,
+        "addItem": m6,
         "addLocation": MessageLookupByLibrary.simpleMessage("Ort hinzufügen"),
         "addLocationButton": MessageLookupByLibrary.simpleMessage("Hinzufügen"),
         "addMemoriesWidgetPrompt": MessageLookupByLibrary.simpleMessage(
@@ -379,7 +379,7 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Neue Person hinzufügen"),
         "addOnPageSubtitle":
             MessageLookupByLibrary.simpleMessage("Details der Add-ons"),
-        "addOnValidTill": m5,
+        "addOnValidTill": m7,
         "addOns": MessageLookupByLibrary.simpleMessage("Add-ons"),
         "addParticipants":
             MessageLookupByLibrary.simpleMessage("Teilnehmer hinzufügen"),
@@ -623,7 +623,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "cancelOtherSubscription": m12,
         "cancelSubscription":
             MessageLookupByLibrary.simpleMessage("Abonnement kündigen"),
-        "cannotAddMorePhotosAfterBecomingViewer": m13,
+        "cannotAddMorePhotosAfterBecomingViewer": m15,
         "cannotDeleteSharedFiles": MessageLookupByLibrary.simpleMessage(
             "Konnte geteilte Dateien nicht löschen"),
         "castAlbum": MessageLookupByLibrary.simpleMessage("Album übertragen"),
@@ -661,7 +661,7 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Freien Speicher einlösen"),
         "claimMore": MessageLookupByLibrary.simpleMessage("Mehr einlösen!"),
         "claimed": MessageLookupByLibrary.simpleMessage("Eingelöst"),
-        "claimedStorageSoFar": m14,
+        "claimedStorageSoFar": m16,
         "cleanUncategorized":
             MessageLookupByLibrary.simpleMessage("Unkategorisiert leeren"),
         "cleanUncategorizedDescription": MessageLookupByLibrary.simpleMessage(
@@ -692,7 +692,7 @@ class MessageLookup extends MessageLookupByLibrary {
             "Erstelle einen Link, mit dem andere Fotos in dem geteilten Album sehen und selbst welche hinzufügen können - ohne dass sie die ein Ente-Konto oder die App benötigen. Ideal um gemeinsam Fotos von Events zu sammeln."),
         "collaborativeLink":
             MessageLookupByLibrary.simpleMessage("Gemeinschaftlicher Link"),
-        "collaborativeLinkCreatedFor": m15,
+        "collaborativeLinkCreatedFor": m17,
         "collaborator": MessageLookupByLibrary.simpleMessage("Bearbeiter"),
         "collaboratorsCanAddPhotosAndVideosToTheSharedAlbum":
             MessageLookupByLibrary.simpleMessage(

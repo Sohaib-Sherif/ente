@@ -35,13 +35,13 @@ class MessageLookup extends MessageLookupByLibrary {
   static String m10(freeAmount, storageUnit) =>
       "${freeAmount} ${storageUnit} tersedia";
 
-  static String m12(paymentProvider) =>
+  static String m14(paymentProvider) =>
       "Harap batalkan langganan kamu di ${paymentProvider} terlebih dahulu";
 
-  static String m13(user) =>
+  static String m15(user) =>
       "${user} tidak akan dapat menambahkan foto lagi ke album ini\n\nIa masih dapat menghapus foto yang ditambahkan olehnya sendiri";
 
-  static String m14(isFamilyMember, storageAmountInGb) =>
+  static String m16(isFamilyMember, storageAmountInGb) =>
       "${Intl.select(isFamilyMember, {
             'true':
                 'Keluargamu saat ini telah memperoleh ${storageAmountInGb} GB',
@@ -49,7 +49,7 @@ class MessageLookup extends MessageLookupByLibrary {
             'other': 'Kamu saat ini telah memperoleh ${storageAmountInGb} GB!',
           })}";
 
-  static String m15(albumName) => "Link kolaborasi terbuat untuk ${albumName}";
+  static String m17(albumName) => "Link kolaborasi terbuat untuk ${albumName}";
 
   static String m18(familyAdminEmail) =>
       "Silakan hubungi <green>${familyAdminEmail}</green> untuk mengatur langgananmu";
@@ -353,10 +353,10 @@ class MessageLookup extends MessageLookupByLibrary {
         "canOnlyRemoveFilesOwnedByYou": MessageLookupByLibrary.simpleMessage(
             "Hanya dapat menghapus berkas yang dimiliki oleh mu"),
         "cancel": MessageLookupByLibrary.simpleMessage("Batal"),
-        "cancelOtherSubscription": m12,
+        "cancelOtherSubscription": m14,
         "cancelSubscription":
             MessageLookupByLibrary.simpleMessage("Batalkan langganan"),
-        "cannotAddMorePhotosAfterBecomingViewer": m13,
+        "cannotAddMorePhotosAfterBecomingViewer": m15,
         "cannotDeleteSharedFiles": MessageLookupByLibrary.simpleMessage(
             "Tidak dapat menghapus file berbagi"),
         "castIPMismatchBody": MessageLookupByLibrary.simpleMessage(
@@ -386,7 +386,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "claimMore":
             MessageLookupByLibrary.simpleMessage("Peroleh lebih banyak!"),
         "claimed": MessageLookupByLibrary.simpleMessage("Diperoleh"),
-        "claimedStorageSoFar": m14,
+        "claimedStorageSoFar": m16,
         "clearIndexes": MessageLookupByLibrary.simpleMessage("Hapus indeks"),
         "click": MessageLookupByLibrary.simpleMessage("• Click"),
         "close": MessageLookupByLibrary.simpleMessage("Tutup"),
@@ -402,7 +402,7 @@ class MessageLookup extends MessageLookupByLibrary {
             "Buat link untuk memungkinkan orang lain menambahkan dan melihat foto yang ada pada album bersama kamu tanpa memerlukan app atau akun Ente. Ideal untuk mengumpulkan foto pada suatu acara."),
         "collaborativeLink":
             MessageLookupByLibrary.simpleMessage("Link kolaborasi"),
-        "collaborativeLinkCreatedFor": m15,
+        "collaborativeLinkCreatedFor": m17,
         "collaborator": MessageLookupByLibrary.simpleMessage("Kolaborator"),
         "collaboratorsCanAddPhotosAndVideosToTheSharedAlbum":
             MessageLookupByLibrary.simpleMessage(

@@ -28,7 +28,7 @@ class MessageLookup extends MessageLookupByLibrary {
   static String m2(count) =>
       "${Intl.plural(count, one: '添加项目', other: '添加数个项目')}";
 
-  static String m5(storageAmount, endDate) =>
+  static String m7(storageAmount, endDate) =>
       "您的 ${storageAmount} 插件有效期至 ${endDate}";
 
   static String m4(count) =>
@@ -52,16 +52,16 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m12(paymentProvider) => "请先取消您现有的订阅 ${paymentProvider}";
 
-  static String m13(user) => "${user} 将无法添加更多照片到此相册\n\n他们仍然能够删除他们添加的现有照片";
+  static String m15(user) => "${user} 将无法添加更多照片到此相册\n\n他们仍然能够删除他们添加的现有照片";
 
-  static String m14(isFamilyMember, storageAmountInGb) =>
+  static String m16(isFamilyMember, storageAmountInGb) =>
       "${Intl.select(isFamilyMember, {
             'true': '到目前为止，您的家庭已经领取了 ${storageAmountInGb} GB',
             'false': '到目前为止，您已经领取了 ${storageAmountInGb} GB',
             'other': '到目前为止，您已经领取了${storageAmountInGb} GB',
           })}";
 
-  static String m15(albumName) => "为 ${albumName} 创建了协作链接";
+  static String m17(albumName) => "为 ${albumName} 创建了协作链接";
 
   static String m16(count) =>
       "${Intl.plural(count, zero: '已添加 0 位协作者', one: '已添加 1 位协作者', other: '已添加 ${count} 位协作者')}";
@@ -312,7 +312,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "addCollaborators": m1,
         "addFiles": MessageLookupByLibrary.simpleMessage("添加文件"),
         "addFromDevice": MessageLookupByLibrary.simpleMessage("从设备添加"),
-        "addItem": m4,
+        "addItem": m6,
         "addLocation": MessageLookupByLibrary.simpleMessage("添加地点"),
         "addLocationButton": MessageLookupByLibrary.simpleMessage("添加"),
         "addMore": MessageLookupByLibrary.simpleMessage("添加更多"),
@@ -321,7 +321,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "addNew": MessageLookupByLibrary.simpleMessage("新建"),
         "addNewPerson": MessageLookupByLibrary.simpleMessage("添加新人物"),
         "addOnPageSubtitle": MessageLookupByLibrary.simpleMessage("附加组件详情"),
-        "addOnValidTill": m5,
+        "addOnValidTill": m7,
         "addOns": MessageLookupByLibrary.simpleMessage("附加组件"),
         "addPhotos": MessageLookupByLibrary.simpleMessage("添加照片"),
         "addSelected": MessageLookupByLibrary.simpleMessage("添加所选项"),
@@ -496,7 +496,7 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("您真的要取消恢复吗？"),
         "cancelOtherSubscription": m12,
         "cancelSubscription": MessageLookupByLibrary.simpleMessage("取消订阅"),
-        "cannotAddMorePhotosAfterBecomingViewer": m13,
+        "cannotAddMorePhotosAfterBecomingViewer": m15,
         "cannotDeleteSharedFiles":
             MessageLookupByLibrary.simpleMessage("无法删除共享文件"),
         "castAlbum": MessageLookupByLibrary.simpleMessage("投放相册"),
@@ -525,7 +525,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "claimFreeStorage": MessageLookupByLibrary.simpleMessage("领取免费存储"),
         "claimMore": MessageLookupByLibrary.simpleMessage("领取更多！"),
         "claimed": MessageLookupByLibrary.simpleMessage("已领取"),
-        "claimedStorageSoFar": m14,
+        "claimedStorageSoFar": m16,
         "cleanUncategorized": MessageLookupByLibrary.simpleMessage("清除未分类的"),
         "cleanUncategorizedDescription":
             MessageLookupByLibrary.simpleMessage("从“未分类”中删除其他相册中存在的所有文件"),
@@ -547,7 +547,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "collabLinkSectionDescription": MessageLookupByLibrary.simpleMessage(
             "创建一个链接来让他人无需 Ente 应用程序或账户即可在您的共享相册中添加和查看照片。非常适合收集活动照片。"),
         "collaborativeLink": MessageLookupByLibrary.simpleMessage("协作链接"),
-        "collaborativeLinkCreatedFor": m15,
+        "collaborativeLinkCreatedFor": m17,
         "collaborator": MessageLookupByLibrary.simpleMessage("协作者"),
         "collaboratorsCanAddPhotosAndVideosToTheSharedAlbum":
             MessageLookupByLibrary.simpleMessage("协作者可以将照片和视频添加到共享相册中。"),
@@ -727,14 +727,9 @@ class MessageLookup extends MessageLookupByLibrary {
         "emailChangedTo": m29,
         "emailDoesNotHaveEnteAccount": m30,
         "emailNoEnteAccount": m31,
-        "emailNotRegistered":
             MessageLookupByLibrary.simpleMessage("此电子邮件地址未被注册。"),
         "emailVerificationToggle":
             MessageLookupByLibrary.simpleMessage("电子邮件验证"),
-        "emailYourLogs": MessageLookupByLibrary.simpleMessage("通过电子邮件发送您的日志"),
-        "embracingThem": m32,
-        "emergencyContacts": MessageLookupByLibrary.simpleMessage("紧急联系人"),
-        "empty": MessageLookupByLibrary.simpleMessage("清空"),
         "emptyTrash": MessageLookupByLibrary.simpleMessage("要清空回收站吗？"),
         "enable": MessageLookupByLibrary.simpleMessage("启用"),
         "enableMLIndexingDesc": MessageLookupByLibrary.simpleMessage(

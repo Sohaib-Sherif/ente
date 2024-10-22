@@ -35,13 +35,13 @@ class MessageLookup extends MessageLookupByLibrary {
   static String m10(freeAmount, storageUnit) =>
       "${freeAmount} ${storageUnit} wolne";
 
-  static String m12(paymentProvider) =>
+  static String m14(paymentProvider) =>
       "Prosimy najpierw anulować istniejącą subskrypcję z ${paymentProvider}";
 
-  static String m13(user) =>
+  static String m15(user) =>
       "${user} nie będzie mógł dodać więcej zdjęć do tego albumu\n\nJednak nadal będą mogli usunąć istniejące zdjęcia, które dodali";
 
-  static String m14(isFamilyMember, storageAmountInGb) =>
+  static String m16(isFamilyMember, storageAmountInGb) =>
       "${Intl.select(isFamilyMember, {
             'true':
                 'Twoja rodzina odebrała ${storageAmountInGb} GB do tej pory',
@@ -49,7 +49,7 @@ class MessageLookup extends MessageLookupByLibrary {
             'other': 'Odebrałeś ${storageAmountInGb} GB do tej pory!',
           })}";
 
-  static String m15(albumName) => "Utworzono link współpracy dla ${albumName}";
+  static String m17(albumName) => "Utworzono link współpracy dla ${albumName}";
 
   static String m16(count) =>
       "${Intl.plural(count, zero: 'Dodano 0 współuczestników', one: 'Dodano 1 współuczestnika', other: 'Dodano ${count} współuczestników')}";
@@ -277,7 +277,7 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Dodaj nową osobę"),
         "addOnPageSubtitle":
             MessageLookupByLibrary.simpleMessage("Szczegóły dodatków"),
-        "addOnValidTill": m5,
+        "addOnValidTill": m7,
         "addOns": MessageLookupByLibrary.simpleMessage("Dodatki"),
         "addPhotos": MessageLookupByLibrary.simpleMessage("Dodaj zdjęcia"),
         "addSelected": MessageLookupByLibrary.simpleMessage("Dodaj zaznaczone"),
@@ -484,7 +484,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "cancelOtherSubscription": m12,
         "cancelSubscription":
             MessageLookupByLibrary.simpleMessage("Anuluj subskrypcję"),
-        "cannotAddMorePhotosAfterBecomingViewer": m13,
+        "cannotAddMorePhotosAfterBecomingViewer": m15,
         "cannotDeleteSharedFiles": MessageLookupByLibrary.simpleMessage(
             "Nie można usunąć udostępnionych plików"),
         "castAlbum": MessageLookupByLibrary.simpleMessage("Odtwórz album"),
@@ -519,7 +519,7 @@ class MessageLookup extends MessageLookupByLibrary {
             "Odbierz bezpłatną przestrzeń dyskową"),
         "claimMore": MessageLookupByLibrary.simpleMessage("Zdobądź więcej!"),
         "claimed": MessageLookupByLibrary.simpleMessage("Odebrano"),
-        "claimedStorageSoFar": m14,
+        "claimedStorageSoFar": m16,
         "cleanUncategorized":
             MessageLookupByLibrary.simpleMessage("Wyczyść Nieskategoryzowane"),
         "cleanUncategorizedDescription": MessageLookupByLibrary.simpleMessage(
@@ -549,7 +549,7 @@ class MessageLookup extends MessageLookupByLibrary {
             "Utwórz link, aby umożliwić innym dodawanie i przeglądanie zdjęć w udostępnionym albumie bez konieczności korzystania z aplikacji lub konta Ente. Świetne rozwiązanie do gromadzenia zdjęć ze wspólnych wydarzeń."),
         "collaborativeLink":
             MessageLookupByLibrary.simpleMessage("Link do współpracy"),
-        "collaborativeLinkCreatedFor": m15,
+        "collaborativeLinkCreatedFor": m17,
         "collaborator": MessageLookupByLibrary.simpleMessage("Współuczestnik"),
         "collaboratorsCanAddPhotosAndVideosToTheSharedAlbum":
             MessageLookupByLibrary.simpleMessage(
