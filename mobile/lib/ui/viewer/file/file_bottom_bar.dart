@@ -46,7 +46,6 @@ class FileBottomBarState extends State<FileBottomBar> {
   final GlobalKey shareButtonKey = GlobalKey();
   bool isGuestView = false;
   late final StreamSubscription<GuestViewEvent> _guestViewEventSubscription;
-  bool isPanorama = false;
   int? lastFileGenID;
 
   @override

@@ -15,6 +15,7 @@ import "package:photos/ui/settings/lock_screen/lock_screen_password.dart";
 import "package:photos/ui/settings/lock_screen/lock_screen_pin.dart";
 import "package:photos/ui/tools/app_lock.dart";
 import "package:photos/utils/lock_screen_settings.dart";
+import "package:photos/utils/navigation_util.dart";
 
 class LockScreenOptions extends StatefulWidget {
   const LockScreenOptions({super.key});
@@ -29,7 +30,9 @@ class _LockScreenOptionsState extends State<LockScreenOptions> {
   late bool appLock;
   bool isPinEnabled = false;
   bool isPasswordEnabled = false;
+  late int autoLockTimeInMilliseconds;
   late bool hideAppContent;
+
   @override
   void initState() {
     super.initState();
@@ -125,6 +128,18 @@ class _LockScreenOptionsState extends State<LockScreenOptions> {
     await _lockscreenSetting.setHideAppContent(
       hideAppContent,
     );
+  }
+
+  String _formatTime(Duration duration) {
+    if (duration.inHours != 0) {
+      return "in ${duration.inHours} hour${duration.inHours > 1 ? 's' : ''}";
+    } else if (duration.inMinutes != 0) {
+      return "in ${duration.inMinutes} minute${duration.inMinutes > 1 ? 's' : ''}";
+    } else if (duration.inSeconds != 0) {
+      return "in ${duration.inSeconds} second${duration.inSeconds > 1 ? 's' : ''}";
+    } else {
+      return S.of(context).immediately;
+    }
   }
 
   @override

@@ -32,7 +32,6 @@ class FaceDetectionService extends MlModel {
   static const double kIouThreshold = 0.4;
   static const double kMinScoreSigmoidThreshold = 0.7;
   static const int kNumKeypoints = 5;
-  static bool useCustomPlugin = Platform.isAndroid;
 
   // Singleton pattern
   FaceDetectionService._privateConstructor();
