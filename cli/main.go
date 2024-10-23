@@ -2,6 +2,11 @@ package main
 
 import (
 	"fmt"
+	"log"
+	"os"
+	"path/filepath"
+	"strings"
+
 	"github.com/ente-io/cli/cmd"
 	"github.com/ente-io/cli/internal"
 	"github.com/ente-io/cli/internal/api"
@@ -9,10 +14,6 @@ import (
 	"github.com/ente-io/cli/pkg/secrets"
 	"github.com/ente-io/cli/utils/constants"
 	"github.com/spf13/viper"
-	"log"
-	"os"
-	"path/filepath"
-	"strings"
 )
 
 var AppVersion = "0.2.3"

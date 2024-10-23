@@ -3,6 +3,8 @@ package pkg
 import (
 	"context"
 	"fmt"
+	"log"
+
 	"github.com/ente-io/cli/internal"
 	"github.com/ente-io/cli/internal/api"
 	eCrypto "github.com/ente-io/cli/internal/crypto"
@@ -10,7 +12,6 @@ import (
 	"github.com/ente-io/cli/utils/browser"
 	"github.com/ente-io/cli/utils/constants"
 	"github.com/ente-io/cli/utils/encoding"
-	"log"
 
 	"github.com/kong/go-srp"
 )

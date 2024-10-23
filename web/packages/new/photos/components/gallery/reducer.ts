@@ -647,6 +647,16 @@ const galleryReducer: React.Reducer<GalleryState, GalleryAction> = (
                     familyData,
                     state.collections,
                 ),
+                view,
+                filteredFiles: deriveAlbumsFilteredFiles(
+                    action.files,
+                    action.trashedFiles,
+                    archivedCollectionIDs,
+                    hiddenFileIDs,
+                    state.tempDeletedFileIDs,
+                    state.tempHiddenFileIDs,
+                    view,
+                ),
             };
         }
 
@@ -819,6 +829,16 @@ const galleryReducer: React.Reducer<GalleryState, GalleryAction> = (
 
         case "markTempDeleted":
             return stateByUpdatingFilteredFiles({
+                ...state,
+                peopleState,
+                selectedPersonID: view.activePerson?.id,
+                extraVisiblePerson,
+                view,
+                filteredFiles,
+            };
+        }
+        case "markTempDeleted":
+            return refreshingFilteredFilesIfShowingAlbumsOrHiddenAlbums({
                 ...state,
                 tempDeletedFileIDs: new Set(
                     [...state.tempDeletedFileIDs].concat(
