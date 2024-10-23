@@ -437,6 +437,7 @@ Future<MLResult> analyzeImageStatic(Map args) async {
     if (pipelines[1] != null) result.clip = pipelines[1] as ClipResult;
 
     final totalMs = DateTime.now().difference(startTime).inMilliseconds;
+
     _logger.info(
       'Finished analyzeImageStatic for fileID $enteFileID, in $totalMs ms (decode: $decodeMs ms$faceMsString$clipMsString)',
     );
