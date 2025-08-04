@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/ente-io/museum/pkg/controller/emergency"
-	"github.com/ente-io/museum/pkg/controller/remotestore"
 	"github.com/ente-io/museum/pkg/repo/authenticator"
 
 	"github.com/ente-io/museum/pkg/controller/remotestore"

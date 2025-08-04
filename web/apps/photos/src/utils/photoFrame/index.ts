@@ -30,12 +30,6 @@ export const handleSelectCreator =
                 _selected,
             );
 
-            const newContext: SelectionContext | undefined = !mode
-                ? undefined
-                : mode == "people"
-                  ? { mode, personID: ensure(activePersonID) }
-                  : { mode, collectionID: ensure(activeCollectionID) };
-
             const handleCounterChange = (count: number) => {
                 if (selected[id] === checked) {
                     return count;

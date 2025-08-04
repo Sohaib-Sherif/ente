@@ -5,9 +5,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"net/http"
-	"strconv"
-
 	fileData "github.com/ente-io/museum/ente/filedata"
 	"github.com/ente-io/museum/pkg/controller/collections"
 	"github.com/ente-io/museum/pkg/controller/filedata"
