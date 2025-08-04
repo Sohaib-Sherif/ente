@@ -5,11 +5,11 @@
  * written for use by the code that runs in our desktop app.
  */
 
-import { nameAndExtension } from "@/base/file";
+import { joinPath, nameAndExtension } from "ente-base/file-name";
 import {
     exportMetadataDirectoryName,
     exportTrashDirectoryName,
-} from "@/new/photos/services/export";
+} from "ente-gallery/export-dirs";
 import sanitize from "sanitize-filename";
 
 /**
@@ -19,8 +19,7 @@ import sanitize from "sanitize-filename";
  * directory separators and invalid characters in the input string {@link s}
  * with "_".
  */
-export const sanitizeFilename = (s: string) =>
-    sanitize(s, { replacement: "_" });
+const sanitizeFilename = (s: string) => sanitize(s, { replacement: "_" });
 
 /**
  * Return a new sanitized and unique directory name based on {@link name} that
@@ -47,7 +46,7 @@ export const safeDirectoryName = async (
     let result = sanitizeFilename(name);
     let count = 1;
     while (
-        (await exists(`${directoryPath}/${result}`)) ||
+        (await exists(joinPath(directoryPath, result))) ||
         specialDirectoryNames.includes(result)
     ) {
         result = `${sanitizeFilename(name)}(${count})`;
@@ -69,7 +68,7 @@ export const safeFileName = async (
 ) => {
     let result = sanitizeFilename(name);
     let count = 1;
-    while (await exists(`${directoryPath}/${result}`)) {
+    while (await exists(joinPath(directoryPath, result))) {
         const [fn, ext] = nameAndExtension(sanitizeFilename(name));
         if (ext) result = `${fn}(${count}).${ext}`;
         else result = `${fn}(${count})`;

@@ -1,32 +1,32 @@
-import { useIsSmallWidth } from "@/base/hooks";
-import { CollectionsSortOptions } from "@/new/photos/components/CollectionsSortOptions";
-import { FilledIconButton } from "@/new/photos/components/mui";
-import {
-    IMAGE_CONTAINER_MAX_WIDTH,
-    MIN_COLUMNS,
-} from "@/new/photos/components/PhotoList";
+import ArchiveIcon from "@mui/icons-material/Archive";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import FavoriteRoundedIcon from "@mui/icons-material/FavoriteRounded";
+import LinkIcon from "@mui/icons-material/Link";
+import NavigateNextIcon from "@mui/icons-material/NavigateNext";
+import PeopleIcon from "@mui/icons-material/People";
+import PushPinIcon from "@mui/icons-material/PushPin";
+import { Box, IconButton, Stack, Typography, styled } from "@mui/material";
+import { Overlay } from "ente-base/components/containers";
+import { FilledIconButton } from "ente-base/components/mui";
+import { Ellipsized2LineTypography } from "ente-base/components/Typography";
+import { useIsSmallWidth } from "ente-base/components/utils/hooks";
+import { CollectionsSortOptions } from "ente-new/photos/components/CollectionsSortOptions";
 import {
     BarItemTile,
     ItemCard,
     TileTextOverlay,
-} from "@/new/photos/components/Tiles";
-import { UnstyledButton } from "@/new/photos/components/UnstyledButton";
+} from "ente-new/photos/components/Tiles";
+import { FocusVisibleUnstyledButton } from "ente-new/photos/components/UnstyledButton";
+import {
+    thumbnailLayoutMinColumns,
+    thumbnailMaxWidth,
+} from "ente-new/photos/components/utils/thumbnail-grid-layout";
 import type {
     CollectionSummary,
-    CollectionSummaryType,
+    CollectionSummaryAttribute,
     CollectionsSortBy,
-} from "@/new/photos/services/collection/ui";
-import type { Person } from "@/new/photos/services/ml/people";
-import { ensure } from "@/utils/ensure";
-import { Overlay } from "@ente/shared/components/Container";
-import ArchiveIcon from "@mui/icons-material/Archive";
-import ExpandMore from "@mui/icons-material/ExpandMore";
-import Favorite from "@mui/icons-material/FavoriteRounded";
-import LinkIcon from "@mui/icons-material/Link";
-import NavigateNextIcon from "@mui/icons-material/NavigateNext";
-import PeopleIcon from "@mui/icons-material/People";
-import PushPin from "@mui/icons-material/PushPin";
-import { Box, IconButton, Stack, Typography, styled } from "@mui/material";
+} from "ente-new/photos/services/collection-summary";
+import type { Person } from "ente-new/photos/services/ml/people";
 import { t } from "i18next";
 import React, {
     memo,
@@ -42,13 +42,10 @@ import {
     type ListChildComponentProps,
     areEqual,
 } from "react-window";
+import { isMLSupported } from "../../services/ml";
 import type { GalleryBarMode } from "./reducer";
 
 export interface GalleryBarImplProps {
-    /**
-     * When `true`, the bar shows a button to switch to the people section.
-     */
-    showPeopleSectionButton: boolean;
     /**
      * What are we displaying currently.
      */
@@ -75,9 +72,9 @@ export interface GalleryBarImplProps {
     onSelectCollectionID: (collectionID: number) => void;
     /**
      * Called when the user selects the option to show a modal with all the
-     * collections.
+     * albums.
      */
-    onShowAllCollections: () => void;
+    onShowAllAlbums: () => void;
     /**
      * The scheme that should be used for sorting the collections in the bar.
      */
@@ -101,13 +98,12 @@ export interface GalleryBarImplProps {
 }
 
 export const GalleryBarImpl: React.FC<GalleryBarImplProps> = ({
-    showPeopleSectionButton,
     mode,
     onChangeMode,
     collectionSummaries,
     activeCollectionID,
     onSelectCollectionID,
-    onShowAllCollections,
+    onShowAllAlbums,
     collectionsSortBy,
     onChangeCollectionsSortBy,
     people,
@@ -150,7 +146,7 @@ export const GalleryBarImpl: React.FC<GalleryBarImplProps> = ({
     >(
         (ref) => {
             listContainerRef.current = ref;
-            if (!ref) return;
+            if (!ref) return undefined;
 
             // Listen for scrolls and resize.
             ref.addEventListener("scroll", updateScrollState);
@@ -201,7 +197,7 @@ export const GalleryBarImpl: React.FC<GalleryBarImplProps> = ({
                 ? {
                       type: "collections",
                       collectionSummaries,
-                      activeCollectionID: ensure(activeCollectionID),
+                      activeCollectionID: activeCollectionID!,
                       onSelectCollectionID,
                   }
                 : {
@@ -222,43 +218,54 @@ export const GalleryBarImpl: React.FC<GalleryBarImplProps> = ({
     );
 
     const controls1 = isSmallWidth && (
-        <Box display="flex" alignItems={"center"} gap={1} minHeight={"64px"}>
+        <Stack
+            direction="row"
+            sx={{ alignItems: "center", gap: 1, minHeight: "64px" }}
+        >
             {mode != "people" && (
                 <>
                     <CollectionsSortOptions
                         activeSortBy={collectionsSortBy}
                         onChangeSortBy={onChangeCollectionsSortBy}
-                        disableTriggerButtonBackground
+                        transparentTriggerButtonBackground
                     />
-                    <IconButton onClick={onShowAllCollections}>
-                        <ExpandMore />
+                    <IconButton onClick={onShowAllAlbums}>
+                        <ExpandMoreIcon />
                     </IconButton>
                 </>
             )}
-        </Box>
+        </Stack>
     );
 
     const controls2 = !isSmallWidth && mode != "people" && (
-        <Box display="flex" alignItems={"center"} gap={1} height={"64px"}>
+        <Stack
+            direction="row"
+            sx={{ alignItems: "center", gap: 1, height: "64px" }}
+        >
             <CollectionsSortOptions
                 activeSortBy={collectionsSortBy}
                 onChangeSortBy={onChangeCollectionsSortBy}
             />
-            <FilledIconButton onClick={onShowAllCollections}>
-                <ExpandMore />
+            <FilledIconButton onClick={onShowAllAlbums}>
+                <ExpandMoreIcon />
             </FilledIconButton>
-        </Box>
+        </Stack>
     );
 
     return (
-        // Hide the bottom border if we're showing the empty state for people.
         <BarWrapper
-            sx={people.length ? {} : { borderBlockEndColor: "transparent" }}
+            // Hide the bottom border when showing the empty state for people.
+            style={
+                {
+                    "--et-bar-bottom-border-color":
+                        mode == "people" && people.length == 0
+                            ? "transparent"
+                            : "var(--mui-palette-divider)",
+                } as React.CSSProperties
+            }
         >
             <Row1>
-                <ModeIndicator
-                    {...{ showPeopleSectionButton, mode, onChangeMode }}
-                />
+                <ModeIndicator {...{ mode, onChangeMode }} />
                 {controls1}
             </Row1>
             <Row2>
@@ -291,16 +298,15 @@ export const GalleryBarImpl: React.FC<GalleryBarImplProps> = ({
     );
 };
 
-const BarWrapper = styled(Box)`
+const BarWrapper = styled("div")`
     padding-inline: 24px;
-    @media (max-width: ${IMAGE_CONTAINER_MAX_WIDTH * MIN_COLUMNS}px) {
+    @media (max-width: ${thumbnailMaxWidth * thumbnailLayoutMinColumns}px) {
         padding-inline: 4px;
     }
     margin-block-end: 16px;
-    border-block-end: 1px solid ${({ theme }) => theme.palette.divider};
 `;
 
-export const Row1 = styled(Box)`
+export const Row1 = styled("div")`
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -308,27 +314,25 @@ export const Row1 = styled(Box)`
     margin-block-end: 12px;
 `;
 
-export const Row2 = styled(Box)`
+export const Row2 = styled("div")`
     display: flex;
     align-items: flex-start;
     gap: 16px;
+    border-block-end: 1px solid var(--et-bar-bottom-border-color);
 `;
 
 const ModeIndicator: React.FC<
-    Pick<
-        GalleryBarImplProps,
-        "showPeopleSectionButton" | "mode" | "onChangeMode"
-    >
-> = ({ showPeopleSectionButton, mode, onChangeMode }) => {
+    Pick<GalleryBarImplProps, "mode" | "onChangeMode">
+> = ({ mode, onChangeMode }) => {
     // Mode switcher is not shown in the hidden albums section.
     if (mode == "hidden-albums") {
         return <Typography>{t("hidden_albums")}</Typography>;
     }
 
-    // Show the static mode indicator with only the "Albums" title if we have
-    // not been asked to show the people button (there are no other sections to
-    // switch to in such a case).
-    if (!showPeopleSectionButton) {
+    // Show the static mode indicator with only the "Albums" title if ML is not
+    // supported on this client (web), since there are no other sections to
+    // switch to in such a case.
+    if (!isMLSupported) {
         return <Typography>{t("albums")}</Typography>;
     }
 
@@ -350,12 +354,16 @@ const ModeIndicator: React.FC<
     );
 };
 
-const ModeButton = styled(UnstyledButton, {
+const ModeButton = styled(FocusVisibleUnstyledButton, {
     shouldForwardProp: (propName) => propName != "active",
 })<{ active: boolean }>(
-    ({ active, theme }) => `
-    p { color: ${active ? theme.colors.text.base : theme.colors.text.muted} }
-    p:hover { color: ${theme.colors.text.base} }
+    ({ theme, active }) => `
+p {
+    color: ${active ? theme.vars.palette.text.base : theme.vars.palette.text.muted}
+}
+p:hover {
+    color: ${theme.vars.palette.text.base}
+}
 `,
 );
 
@@ -367,32 +375,26 @@ const ScrollButtonBase: React.FC<
     </ScrollButtonBase_>
 );
 
-const ScrollButtonBase_ = styled("button")`
-    position: absolute;
-    z-index: 2;
-    top: 7px;
-    height: 50px;
-    width: 50px;
-    border: none;
-    padding: 0;
-    margin: 0;
-
-    border-radius: 50%;
-    background-color: ${({ theme }) => theme.colors.backdrop.muted};
-    color: ${({ theme }) => theme.colors.stroke.base};
-
-    & > svg {
-        border-radius: 50%;
-        height: 30px;
-        width: 30px;
-    }
-`;
+const ScrollButtonBase_ = styled("button")(({ theme }) => ({
+    position: "absolute",
+    zIndex: 2,
+    top: "7px",
+    height: "50px",
+    width: "50px",
+    border: "none",
+    padding: 0,
+    margin: 0,
+    borderRadius: "50%",
+    backgroundColor: theme.vars.palette.backdrop.muted,
+    color: theme.vars.palette.stroke.base,
+    cursor: "pointer",
+    "& > svg": { borderRadius: "50%", height: "30px", width: "30px" },
+}));
 
 const ScrollButtonLeft = styled(ScrollButtonBase)`
     left: 0;
     text-align: right;
     transform: translate(-50%, 0%);
-
     & > svg {
         transform: rotate(180deg);
     }
@@ -404,7 +406,7 @@ const ScrollButtonRight = styled(ScrollButtonBase)`
     transform: translate(50%, 0%);
 `;
 
-const ListWrapper = styled(Box)`
+const ListWrapper = styled("div")`
     position: relative;
     overflow: hidden;
     height: 86px;
@@ -439,11 +441,11 @@ const getItemCount = (data: ItemData) => {
 const getItemKey = (index: number, data: ItemData) => {
     switch (data.type) {
         case "collections": {
-            const collectionSummary = ensure(data.collectionSummaries[index]);
+            const collectionSummary = data.collectionSummaries[index]!;
             return `${data.type}-${collectionSummary.id}-${collectionSummary.coverFile?.id}`;
         }
         case "people": {
-            const person = ensure(data.people[index]);
+            const person = data.people[index]!;
             return `${data.type}-${person.id}-${person.displayFaceID}`;
         }
     }
@@ -461,7 +463,7 @@ const ListItem = memo((props: ListChildComponentProps<ItemData>) => {
                 activeCollectionID,
                 onSelectCollectionID,
             } = data;
-            const collectionSummary = ensure(collectionSummaries[index]);
+            const collectionSummary = collectionSummaries[index]!;
             card = (
                 <CollectionBarCard
                     key={collectionSummary.id}
@@ -477,7 +479,7 @@ const ListItem = memo((props: ListChildComponentProps<ItemData>) => {
 
         case "people": {
             const { people, activePerson, onSelectPerson } = data;
-            const person = ensure(people[index]);
+            const person = people[index]!;
             card = (
                 <PersonCard
                     key={person.id}
@@ -509,7 +511,7 @@ const CollectionBarCard: React.FC<CollectionBarCardProps> = ({
             onClick={() => onSelectCollectionID(collectionSummary.id)}
         >
             <CardText>{collectionSummary.name}</CardText>
-            <CollectionBarCardIcon type={collectionSummary.type} />
+            <CollectionBarCardIcon attributes={collectionSummary.attributes} />
         </ItemCard>
         {activeCollectionID === collectionSummary.id && <ActiveIndicator />}
     </div>
@@ -517,43 +519,37 @@ const CollectionBarCard: React.FC<CollectionBarCardProps> = ({
 
 const CardText: React.FC<React.PropsWithChildren> = ({ children }) => (
     <TileTextOverlay>
-        <Box height={"2.1em"}>
-            <Ellipsized variant="small">{children}</Ellipsized>
+        <Box sx={{ height: "2.1em" }}>
+            <Ellipsized2LineTypography variant="small">
+                {children}
+            </Ellipsized2LineTypography>
         </Box>
     </TileTextOverlay>
 );
 
-const Ellipsized = styled(Typography)`
-    overflow: hidden;
-    text-overflow: ellipsis;
-    display: -webkit-box;
-    -webkit-line-clamp: 2; // number of lines to show
-    line-clamp: 2;
-    -webkit-box-orient: vertical;
-    word-break: break-word;
-`;
-
 interface CollectionBarCardIconProps {
-    type: CollectionSummaryType;
+    attributes: Set<CollectionSummaryAttribute>;
 }
 
 const CollectionBarCardIcon: React.FC<CollectionBarCardIconProps> = ({
-    type,
+    attributes,
 }) => (
+    // Under current scenarios, there are no cases where more than 3 of these
+    // will be true simultaneously even in the rarest of cases (a pinned and
+    // shared album that is also archived), and there is enough space for 3.
     <CollectionBarCardIcon_>
-        {type == "favorites" && <Favorite />}
-        {type == "archived" && (
-            <ArchiveIcon
-                sx={(theme) => ({
-                    color: theme.colors.white.muted,
-                })}
-            />
+        {attributes.has("userFavorites") && <FavoriteRoundedIcon />}
+        {attributes.has("pinned") && (
+            // Need && to override the 20px set in the container.
+            <PushPinIcon sx={{ "&&": { fontSize: "18px" } }} />
         )}
-        {type == "outgoingShare" && <PeopleIcon />}
-        {(type == "incomingShareViewer" ||
-            type == "incomingShareCollaborator") && <PeopleIcon />}
-        {type == "sharedOnlyViaLink" && <LinkIcon />}
-        {type == "pinned" && <PushPin />}
+        {attributes.has("shared") &&
+            (attributes.has("sharedOnlyViaLink") ? (
+                <LinkIcon />
+            ) : (
+                <PeopleIcon />
+            ))}
+        {attributes.has("archived") && <ArchiveIcon sx={{ opacity: 0.48 }} />}
     </CollectionBarCardIcon_>
 );
 
@@ -562,17 +558,20 @@ const CollectionBarCardIcon_ = styled(Overlay)`
     display: flex;
     justify-content: flex-start;
     align-items: flex-end;
+    gap: 4px;
     & > .MuiSvgIcon-root {
         font-size: 20px;
     }
 `;
 
-const ActiveIndicator = styled("div")`
+const ActiveIndicator = styled("div")(
+    ({ theme }) => `
     height: 3px;
-    background-color: ${({ theme }) => theme.palette.primary.main};
-    margin-top: 18px;
+    background-color: ${theme.vars.palette.stroke.base};
+    margin-top: 19px;
     border-radius: 2px;
-`;
+`,
+);
 
 interface PersonCardProps {
     person: Person;

@@ -3,6 +3,7 @@ package base
 import (
 	"errors"
 	"fmt"
+
 	"github.com/google/uuid"
 	"github.com/matoous/go-nanoid/v2"
 )
@@ -28,6 +29,14 @@ func NewID(prefix string) (*string, error) {
 	}
 	result := fmt.Sprintf("%s_%s", prefix, id)
 	return &result, nil
+}
+
+func MustNewID(prefix string) string {
+	id, err := NewID(prefix)
+	if err != nil {
+		panic(err)
+	}
+	return *id
 }
 
 func ServerReqID() string {

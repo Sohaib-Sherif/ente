@@ -1,15 +1,18 @@
-import { HTTPError } from "@/base/http";
-import type { Location } from "@/base/types";
-import type { Collection } from "@/media/collection";
-import type { EnteFile } from "@/media/file";
-import { fileCreationPhotoDate, fileLocation } from "@/media/file-metadata";
-import { ensure } from "@/utils/ensure";
-import { nullToUndefined } from "@/utils/transform";
-import { getPublicMagicMetadataSync } from "@ente/shared/file-metadata";
 import type { Component } from "chrono-node";
 import * as chrono from "chrono-node";
 import { expose } from "comlink";
-import { z } from "zod";
+import { HTTPError } from "ente-base/http";
+import { logUnhandledErrorsAndRejectionsInWorker } from "ente-base/log-web";
+import type { Location } from "ente-base/types";
+import type { Collection } from "ente-media/collection";
+import type { EnteFile } from "ente-media/file";
+import {
+    fileCreationPhotoDate,
+    fileFileName,
+    fileLocation,
+} from "ente-media/file-metadata";
+import { nullToUndefined } from "ente-utils/transform";
+import { z } from "zod/v4";
 import type { NamedPerson } from "../ml/people";
 import {
     pullUserEntities,
@@ -36,22 +39,27 @@ export class SearchWorker {
     private collectionsAndFiles: SearchCollectionsAndFiles = {
         collections: [],
         files: [],
+        collectionFiles: [],
     };
     private people: NamedPerson[] = [];
 
     /**
      * Fetch any state we might need when the actual search happens.
      *
-     * @param masterKey The user's master key. Web workers do not have access to
-     * session storage so this key needs to be passed to us explicitly.
+     * @param masterKey The user's master key (as a base64 string). Web workers
+     * do not have access to session storage so this key needs to be passed to
+     * us explicitly.
      */
-    async sync(masterKey: Uint8Array) {
-        return Promise.all([
-            pullUserEntities("location", masterKey)
-                .then(() => savedLocationTags())
-                .then((ts) => (this.locationTags = ts)),
-            fetchCities().then((cs) => (this.cities = cs)),
-        ]);
+    async sync(masterKey: string) {
+        // Let the cities fetch complete async. And do it only once per app
+        // startup (this list is static and doesn't change).
+        if (this.cities.length == 0) {
+            void fetchCities().then((cs) => (this.cities = cs));
+        }
+
+        return pullUserEntities("location", masterKey)
+            .then(() => savedLocationTags())
+            .then((ts) => (this.locationTags = ts));
     }
 
     /**
@@ -78,9 +86,10 @@ export class SearchWorker {
     ) {
         return suggestionsForString(
             s,
-            // Case insensitive word prefix match, considering underscores also
-            // as a word separator.
-            new RegExp("(\\b|_)" + s, "i"),
+            // Case insensitive word prefix match.  Note that \b doesn't work
+            // with unicode characters, so we use instead a set of common
+            // punctuation (and spaces) to discern the word boundary.
+            new RegExp("(^|[\\s.,!?\"'-_])" + s, "i"),
             searchString,
             this.collectionsAndFiles,
             this.people,
@@ -94,24 +103,23 @@ export class SearchWorker {
      * Return {@link EnteFile}s that satisfy the given {@link suggestion}.
      */
     filterSearchableFiles(suggestion: SearchSuggestion) {
-        return filterSearchableFiles(
-            this.collectionsAndFiles.files,
-            suggestion,
-        );
+        return filterSearchableFiles(this.collectionsAndFiles, suggestion);
     }
 
     /**
      * Batched variant of {@link filterSearchableFiles}.
      */
     filterSearchableFilesMulti(suggestions: SearchSuggestion[]) {
-        const files = this.collectionsAndFiles.files;
+        const cf = this.collectionsAndFiles;
         return suggestions
-            .map((sg) => [filterSearchableFiles(files, sg), sg] as const)
+            .map((sg) => [filterSearchableFiles(cf, sg), sg] as const)
             .filter(([files]) => files.length);
     }
 }
 
 expose(SearchWorker);
+
+logUnhandledErrorsAndRejectionsInWorker();
 
 /**
  * @param s The normalized form of {@link searchString}.
@@ -170,7 +178,7 @@ const fileNameSuggestion = (
     const sn = Number(s) || undefined;
 
     const fileIDs = files
-        .filter(({ id, metadata }) => id === sn || re.test(metadata.title))
+        .filter((f) => f.id === sn || re.test(fileFileName(f)))
         .map((f) => f.id);
 
     return fileIDs.length
@@ -300,16 +308,12 @@ const parseYearComponents = (s: string): LabelledSearchDateComponents[] => {
  */
 const RemoteWorldCities = z.object({
     data: z.array(
-        z.object({
-            city: z.string(),
-            lat: z.number(),
-            lng: z.number(),
-        }),
+        z.object({ city: z.string(), lat: z.number(), lng: z.number() }),
     ),
 });
 
 const fetchCities = async () => {
-    const res = await fetch("https://static.ente.io/world_cities.json");
+    const res = await fetch("https://assets.ente.io/world_cities.json");
     if (!res.ok) throw new HTTPError(res);
     return RemoteWorldCities.parse(await res.json()).data.map(
         ({ city, lat, lng }) => ({ name: city, latitude: lat, longitude: lng }),
@@ -350,11 +354,13 @@ const locationSuggestions = (
 };
 
 const filterSearchableFiles = (
-    files: EnteFile[],
+    { files, collectionFiles }: SearchCollectionsAndFiles,
     suggestion: SearchSuggestion,
 ) =>
     sortMatchesIfNeeded(
-        files.filter((f) => isMatchingFile(f, suggestion)),
+        (suggestion.type == "collection" ? collectionFiles : files).filter(
+            (f) => isMatchingFile(f, suggestion),
+        ),
         suggestion,
     );
 
@@ -367,7 +373,7 @@ const isMatchingFile = (file: EnteFile, suggestion: SearchSuggestion) => {
             return suggestion.collectionID === file.collectionID;
 
         case "fileType":
-            return suggestion.fileType === file.metadata.fileType;
+            return suggestion.fileType == file.metadata.fileType;
 
         case "fileName":
             return suggestion.fileIDs.includes(file.id);
@@ -378,7 +384,7 @@ const isMatchingFile = (file: EnteFile, suggestion: SearchSuggestion) => {
         case "date":
             return isDateComponentsMatch(
                 suggestion.dateComponents,
-                fileCreationPhotoDate(file, getPublicMagicMetadataSync(file)),
+                fileCreationPhotoDate(file),
             );
 
         case "location": {
@@ -425,10 +431,6 @@ const defaultCityRadius = 10;
 const kmsPerDegree = 111.16;
 
 const isInsideLocationTag = (location: Location, locationTag: LocationTag) =>
-    // See: [Note: strict mode migration]
-    //
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
     isWithinRadius(location, locationTag.centerPoint, locationTag.radius);
 
 const isInsideCity = (location: Location, city: City) =>
@@ -452,7 +454,7 @@ const isWithinRadius = (
  *
  * The area bounded by the location tag becomes more elliptical with increase in
  * the magnitude of the latitude on the cartesian plane. When latitude is 0
- * degrees, the ellipse is a circle with a = b = r. When latitude incrases, the
+ * degrees, the ellipse is a circle with a = b = r. When latitude increases, the
  * major axis (a) has to be scaled by the secant of the latitude.
  */
 const radiusScaleFactor = (lat: number) => 1 / Math.cos(lat * (Math.PI / 180));
@@ -470,7 +472,6 @@ const sortMatchesIfNeeded = (
 ) => {
     if (suggestion.type != "clip") return files;
     // Sort CLIP matches by their corresponding scores.
-    const score = ({ id }: EnteFile) =>
-        ensure(suggestion.clipScoreForFileID.get(id));
+    const score = ({ id }: EnteFile) => suggestion.clipScoreForFileID.get(id)!;
     return files.sort((a, b) => score(b) - score(a));
 };

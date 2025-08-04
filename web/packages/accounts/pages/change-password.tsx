@@ -1,159 +1,101 @@
+import { Divider } from "@mui/material";
 import {
-    getSRPAttributes,
-    startSRPSetup,
-    updateSRPAndKeys,
-} from "@/accounts/api/srp";
-import SetPasswordForm, {
-    type SetPasswordFormProps,
-} from "@/accounts/components/SetPasswordForm";
-import { PAGES } from "@/accounts/constants/pages";
-import {
-    generateSRPClient,
-    generateSRPSetupAttributes,
-} from "@/accounts/services/srp";
-import type { UpdatedKey } from "@/accounts/types/user";
-import { convertBase64ToBuffer, convertBufferToBase64 } from "@/accounts/utils";
-import { sharedCryptoWorker } from "@/base/crypto";
-import { ensure } from "@/utils/ensure";
-import { VerticallyCentered } from "@ente/shared/components/Container";
-import FormPaper from "@ente/shared/components/Form/FormPaper";
-import FormPaperFooter from "@ente/shared/components/Form/FormPaper/Footer";
-import FormPaperTitle from "@ente/shared/components/Form/FormPaper/Title";
-import LinkButton from "@ente/shared/components/LinkButton";
-import {
-    generateAndSaveIntermediateKeyAttributes,
-    generateLoginSubKey,
-    saveKeyInSessionStore,
-} from "@ente/shared/crypto/helpers";
-import { LS_KEYS, getData, setData } from "@ente/shared/storage/localStorage";
-import { SESSION_KEYS } from "@ente/shared/storage/sessionStorage";
-import { getActualKey } from "@ente/shared/user";
-import type { KEK, KeyAttributes, User } from "@ente/shared/user/types";
+    AccountsPageContents,
+    AccountsPageFooter,
+    AccountsPageTitle,
+} from "ente-accounts/components/layouts/centered-paper";
+import { appHomeRoute, stashRedirect } from "ente-accounts/services/redirect";
+import { changePassword, type LocalUser } from "ente-accounts/services/user";
+import { LinkButton } from "ente-base/components/LinkButton";
+import { LoadingIndicator } from "ente-base/components/loaders";
+import { deriveKeyInsufficientMemoryErrorMessage } from "ente-base/crypto/types";
+import log from "ente-base/log";
 import { t } from "i18next";
 import { useRouter } from "next/router";
-import { useEffect, useState } from "react";
-import { appHomeRoute, stashRedirect } from "../services/redirect";
-import type { PageProps } from "../types/page";
+import React, { useCallback, useEffect, useState } from "react";
+import {
+    NewPasswordForm,
+    type NewPasswordFormProps,
+} from "../components/NewPasswordForm";
+import { savedLocalUser } from "../services/accounts-db";
 
-const Page: React.FC<PageProps> = () => {
-    const [token, setToken] = useState<string>();
-    const [user, setUser] = useState<User>();
+/**
+ * A page that allows a user to reset or change their password.
+ *
+ * See: [Note: Login pages]
+ */
+const Page: React.FC = () => {
+    const [user, setUser] = useState<LocalUser | undefined>(undefined);
 
     const router = useRouter();
 
+    // We're invoked with the "?op=reset" query parameter in the recovery flow.
+    const isReset = router.query.op == "reset";
+
     useEffect(() => {
-        const user = getData(LS_KEYS.USER);
-        setUser(user);
-        if (!user?.token) {
-            stashRedirect(PAGES.CHANGE_PASSWORD);
-            router.push("/");
+        const user = savedLocalUser();
+        if (user) {
+            setUser(user);
         } else {
-            setToken(user.token);
+            stashRedirect("/change-password");
+            void router.replace("/");
         }
-    }, []);
+    }, [router]);
 
-    const onSubmit: SetPasswordFormProps["callback"] = async (
-        passphrase,
-        setFieldError,
-    ) => {
-        const cryptoWorker = await sharedCryptoWorker();
-        const key = await getActualKey();
-        const keyAttributes: KeyAttributes = getData(LS_KEYS.KEY_ATTRIBUTES);
-        const kekSalt = await cryptoWorker.generateSaltToDeriveKey();
-        let kek: KEK;
-        try {
-            kek = await cryptoWorker.deriveSensitiveKey(passphrase, kekSalt);
-        } catch (e) {
-            setFieldError("confirm", t("PASSWORD_GENERATION_FAILED"));
-            return;
-        }
-        const encryptedKeyAttributes = await cryptoWorker.encryptToB64(
-            key,
-            kek.key,
-        );
-        const updatedKey: UpdatedKey = {
-            kekSalt,
-            encryptedKey: encryptedKeyAttributes.encryptedData,
-            keyDecryptionNonce: encryptedKeyAttributes.nonce,
-            opsLimit: kek.opsLimit,
-            memLimit: kek.memLimit,
-        };
-
-        const loginSubKey = await generateLoginSubKey(kek.key);
-
-        const { srpUserID, srpSalt, srpVerifier } =
-            await generateSRPSetupAttributes(loginSubKey);
-
-        const srpClient = await generateSRPClient(
-            srpSalt,
-            srpUserID,
-            loginSubKey,
-        );
-
-        const srpA = convertBufferToBase64(srpClient.computeA());
-
-        const { setupID, srpB } = await startSRPSetup(ensure(token), {
-            srpUserID,
-            srpSalt,
-            srpVerifier,
-            srpA,
-        });
-
-        srpClient.setB(convertBase64ToBuffer(srpB));
-
-        const srpM1 = convertBufferToBase64(srpClient.computeM1());
-
-        await updateSRPAndKeys(ensure(token), {
-            setupID,
-            srpM1,
-            updatedKeyAttr: updatedKey,
-        });
-
-        // Update the SRP attributes that are stored locally.
-        if (user?.email) {
-            const srpAttributes = await getSRPAttributes(user.email);
-            if (srpAttributes) {
-                setData(LS_KEYS.SRP_ATTRIBUTES, srpAttributes);
-            }
-        }
-
-        const updatedKeyAttributes = Object.assign(keyAttributes, updatedKey);
-        await generateAndSaveIntermediateKeyAttributes(
-            passphrase,
-            updatedKeyAttributes,
-            key,
-        );
-
-        await saveKeyInSessionStore(SESSION_KEYS.ENCRYPTION_KEY, key);
-
-        redirectToAppHome();
-    };
-
-    const redirectToAppHome = () => {
-        setData(LS_KEYS.SHOW_BACK_BUTTON, { value: true });
-        router.push(appHomeRoute);
-    };
-
-    // TODO: Handle the case where user is not loaded yet.
-    return (
-        <VerticallyCentered>
-            <FormPaper>
-                <FormPaperTitle>{t("CHANGE_PASSWORD")}</FormPaperTitle>
-                <SetPasswordForm
-                    userEmail={user?.email ?? ""}
-                    callback={onSubmit}
-                    buttonText={t("CHANGE_PASSWORD")}
-                />
-                {(getData(LS_KEYS.SHOW_BACK_BUTTON)?.value ?? true) && (
-                    <FormPaperFooter>
-                        <LinkButton onClick={router.back}>
-                            {t("GO_BACK")}
-                        </LinkButton>
-                    </FormPaperFooter>
-                )}
-            </FormPaper>
-        </VerticallyCentered>
+    return user ? (
+        <PageContents {...{ user, isReset }} />
+    ) : (
+        <LoadingIndicator />
     );
 };
 
 export default Page;
+
+interface PageContentsProps {
+    user: LocalUser;
+    /**
+     * True if the password is being reset during the account recovery flow.
+     */
+    isReset: boolean;
+}
+
+const PageContents: React.FC<PageContentsProps> = ({ user, isReset }) => {
+    const router = useRouter();
+
+    const handleSubmit: NewPasswordFormProps["onSubmit"] = useCallback(
+        async (password, setPasswordsFieldError) =>
+            changePassword(password)
+                .then(() => void router.push(appHomeRoute))
+                .catch((e: unknown) => {
+                    log.error("Could not change password", e);
+                    setPasswordsFieldError(
+                        e instanceof Error &&
+                            e.message == deriveKeyInsufficientMemoryErrorMessage
+                            ? t("password_generation_failed")
+                            : t("generic_error"),
+                    );
+                }),
+        [router],
+    );
+
+    return (
+        <AccountsPageContents>
+            <AccountsPageTitle>{t("change_password")}</AccountsPageTitle>
+            <NewPasswordForm
+                userEmail={user.email}
+                submitButtonTitle={t("change_password")}
+                onSubmit={handleSubmit}
+            />
+            {!isReset && (
+                <>
+                    <Divider sx={{ mt: 1 }} />
+                    <AccountsPageFooter>
+                        <LinkButton onClick={router.back}>
+                            {t("go_back")}
+                        </LinkButton>
+                    </AccountsPageFooter>
+                </>
+            )}
+        </AccountsPageContents>
+    );
+};

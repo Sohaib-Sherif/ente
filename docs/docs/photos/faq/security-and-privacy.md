@@ -1,7 +1,6 @@
 ---
 title: Security and Privacy FAQ
-description:
-    Comprehensive information about security and privacy measures in Ente Photos
+description: Comprehensive information about security and privacy measures in Ente Photos
 ---
 
 # Security and Privacy FAQ
@@ -25,9 +24,9 @@ your files. For technical details, please see our
 
 We use the following encryption algorithms:
 
--   Encryption: `XChaCha20` and `XSalsa20`
--   Authentication: Poly1305 message authentication code (MAC)
--   Key derivation: Argon2id with high memory and computation parameters
+- Encryption: `XChaCha20` and `XSalsa20`
+- Authentication: Poly1305 message authentication code (MAC)
+- Key derivation: Argon2id with high memory and computation parameters
 
 These algorithms are implemented using
 [libsodium](https://libsodium.gitbook.io/doc/), a externally audited
@@ -38,14 +37,17 @@ provides full technical specifications.
 
 Your encrypted data is stored redundantly across multiple providers in the EU:
 
--   Amsterdam, Netherlands
--   Paris, France
--   Frankfurt, Germany
+- Amsterdam, Netherlands
+- Paris, France
+- Frankfurt, Germany
 
 We use a combination of object storage and distributed databases to ensure high
 availability and durability. Our
 [reliability document](https://ente.io/reliability) provides in-depth
 information about our storage infrastructure and data replication strategies.
+
+In short, we store 3 copies of your data, across 3 different providers, in 3
+different countries. One of them is in an underground fall-out shelter in Paris.
 
 ### How does Ente's encryption compare to industry standards?
 
@@ -55,14 +57,17 @@ in the unlikely event of a server breach, your data remains protected.
 
 ## Account Security
 
-### What happens if I forget my password?
+### What happens if I forget my password? {#account-recovery}
 
-You can reset your password using your recovery key that was provided to you
-during account creation. Please store this key securely, as it's your lifeline
-if you forget your password.
+If you are logged into Ente on any of your existing devices, you can use that
+device to reset your password and use your new password to log in.
 
-If you lose both your password and recovery key, we cannot recover your account
-or data due to our end-to-end encrypted architecture.
+If you are logged out of Ente on all your devices, you can reset your password
+using your recovery key that was provided to you during account creation.
+
+If you are logged out of Ente on all your devices and you have lost both your
+password and recovery key, we cannot recover your account or data due to our
+end-to-end encrypted architecture.
 
 If you wish to delete your account in such scenarios, please reach out to
 support@ente.io and we will help you out.
@@ -79,8 +84,8 @@ please choose a strong one.
 
 Yes, we recommend enabling 2FA for an additional layer of security. We support:
 
--   Time-based One-Time Passwords (TOTP)
--   WebAuthn/FIDO2 for hardware security keys
+- Time-based One-Time Passwords (TOTP)
+- WebAuthn/FIDO2 for hardware security keys
 
 You can set up 2FA in the settings of our mobile or desktop apps.
 

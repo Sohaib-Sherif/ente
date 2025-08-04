@@ -10,14 +10,7 @@ import {
 import React, { useState } from "react";
 import { getEmail, getToken } from "../App"; // Import getEmail and getToken functions
 import { apiOrigin } from "../services/support";
-
-interface UserData {
-    subscription?: {
-        userID: string;
-        // Add other properties as per your API response structure
-    };
-    // Add other properties as per your API response structure
-}
+import type { UserData } from "../types";
 
 interface CloseFamilyProps {
     open: boolean;
@@ -47,11 +40,16 @@ const CloseFamily: React.FC<CloseFamilyProps> = ({
             }
 
             const encodedEmail = encodeURIComponent(email);
-            const encodedToken = encodeURIComponent(token);
 
             // Fetch user data
-            const userUrl = `${apiOrigin}/admin/user?email=${encodedEmail}&token=${encodedToken}`;
-            const userResponse = await fetch(userUrl);
+            const userUrl = `${apiOrigin}/admin/user?email=${encodedEmail}`;
+            const userResponse = await fetch(userUrl, {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-Auth-Token": token,
+                },
+            });
             if (!userResponse.ok) {
                 throw new Error("Failed to fetch user data");
             }
@@ -63,11 +61,14 @@ const CloseFamily: React.FC<CloseFamilyProps> = ({
             }
 
             // Close family action
-            const closeFamilyUrl = `${apiOrigin}/admin/user/close-family?token=${encodedToken}`;
+            const closeFamilyUrl = `${apiOrigin}/admin/user/close-family`;
             const body = JSON.stringify({ userId });
             const closeFamilyResponse = await fetch(closeFamilyUrl, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-Auth-Token": token,
+                },
                 body: body,
             });
 
@@ -78,9 +79,12 @@ const CloseFamily: React.FC<CloseFamilyProps> = ({
 
             handleCloseFamily(); // Notify parent component of successful action
             handleClose(); // Close dialog on successful action
-            console.log("Family closed successfully");
         } catch (error) {
-            console.error("Error closing family:", error);
+            if (error instanceof Error) {
+                alert(error.message);
+            } else {
+                alert("Failed to close family");
+            }
         } finally {
             setLoading(false);
         }

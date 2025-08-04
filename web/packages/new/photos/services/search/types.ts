@@ -3,11 +3,11 @@
  * and the search worker that does the actual searching (`worker.ts`).
  */
 
-import type { Location } from "@/base/types";
-import type { Collection } from "@/media/collection";
-import type { EnteFile } from "@/media/file";
-import { FileType } from "@/media/file-type";
-import type { Person } from "@/new/photos/services/ml/people";
+import type { Location } from "ente-base/types";
+import type { Collection } from "ente-media/collection";
+import type { EnteFile } from "ente-media/file";
+import { FileType } from "ente-media/file-type";
+import type { Person } from "ente-new/photos/services/ml/people";
 import type { LocationTag } from "../user-entity";
 
 /**
@@ -32,14 +32,17 @@ export type SearchSuggestion = { label: string } & (
  * An option shown in the the search bar's select dropdown.
  *
  * The {@link SearchOption} wraps a {@link SearchSuggestion} with some metadata
- * used when showing a corresponding entry in the dropdown, and in the results
- * header.
+ * used when showing a corresponding entry in the dropdown.
  *
  * If the user selects the option, then we will re-run the search using the
  * {@link suggestion} to filter the list of files shown to the user.
  */
 export interface SearchOption {
     suggestion: SearchSuggestion;
+    /**
+     * The count of files that matched the search option when it was initially
+     * computed.
+     */
     fileCount: number;
     previewFiles: EnteFile[];
 }
@@ -49,7 +52,20 @@ export interface SearchOption {
  */
 export interface SearchCollectionsAndFiles {
     collections: Collection[];
+    /**
+     * Unique files (by ID).
+     *
+     * @see {@link uniqueFilesByID}.
+     */
     files: EnteFile[];
+    /**
+     * One entry per collection/file pair.
+     *
+     * Whenever the same file (ID) is in multiple collections, the
+     * {@link collectionFiles} will have multiple entries with the same file ID,
+     * one per collection in which that file (ID) occurs.
+     */
+    collectionFiles: EnteFile[];
 }
 
 export interface LabelledSearchDateComponents {

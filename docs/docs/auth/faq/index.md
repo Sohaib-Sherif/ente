@@ -25,6 +25,11 @@ at [ente.io](https://ente.io).
 
 You can enable FaceID lock under Settings → Security → Lockscreen.
 
+### How secure is the lock screen provided by Ente Auth?
+
+Auth's lock screen acts as a barrier to prevent an attacker from accessing the
+contents of the app. It does not introduce a layer of cryptographic security.
+
 ### Why do the desktop and mobile apps display different codes?
 
 Please verify that the time on both your mobile and desktop is the same.
@@ -35,6 +40,16 @@ mobile, the codes you see will be the same.
 Usually, this discrepancy occurs because the time in your browser might be
 incorrect. In particular, multiple users have reported that Firefox provides
 incorrect time when certain privacy settings are enabled.
+
+> [!TIP]
+>
+> Newer Ente Auth clients (upcoming 4.4.0+) will automatically try to correct
+> for incorrect system time, so you should be seeing correct codes even if your
+> system time is out of sync. However, this automatic correction will not work
+> if you're using Ente Auth in offline mode.
+>
+> If you've recently changed your system time and the codes are still incorrect,
+> try to refresh / restart the app if needed.
 
 ### Can I access my codes on web?
 

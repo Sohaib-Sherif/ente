@@ -4,9 +4,10 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/sirupsen/logrus"
 	"net/http"
 	"strconv"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/ente-io/museum/ente/jwt"
 	"github.com/ente-io/museum/pkg/utils/network"
@@ -48,7 +49,12 @@ func (m *AuthMiddleware) TokenAuthMiddleware(jwtClaimScope *jwt.ClaimScope) gin.
 		var err error
 		if !found {
 			if isJWT {
-				userID, err = m.UserController.ValidateJWTToken(token, *jwtClaimScope)
+				claim, claimErr := m.UserController.ValidateJWTToken(token, *jwtClaimScope)
+				if claimErr != nil {
+					err = claimErr
+				} else {
+					userID = claim.UserID
+				}
 			} else {
 				userID, err = m.UserAuthRepo.GetUserIDWithToken(token, app)
 				if err != nil && !errors.Is(err, sql.ErrNoRows) {
@@ -91,8 +97,17 @@ func (m *AuthMiddleware) AdminAuthMiddleware() gin.HandlerFunc {
 				return
 			}
 		}
+		// The config allows alternatively specifying a singular admin ID to
+		// workaround Viper issues in passing env vars for an int slice.
+		admin := viper.GetInt("internal.admin")
+		if len(admins) == 0 && admin != 0 {
+			if int64(admin) == userID {
+				c.Next()
+				return
+			}
+		}
 		// if no admins are set, then check if the user is first user in the system
-		if len(admins) == 0 {
+		if len(admins) == 0 && admin == 0 {
 			id, err := m.UserAuthRepo.GetMinUserID()
 			if err != nil && id == userID {
 				c.Next()

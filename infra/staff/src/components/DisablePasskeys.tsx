@@ -10,20 +10,7 @@ import {
 import React, { useState } from "react";
 import { getEmail, getToken } from "../App"; // Import getEmail and getToken functions
 import { apiOrigin } from "../services/support";
-
-interface UserData {
-    subscription?: {
-        userID: string;
-        // Add other properties as per your API response structure
-    };
-    // Add other properties as per your API response structure
-}
-
-interface DisablePasskeysProps {
-    open: boolean;
-    handleClose: () => void;
-    handleDisablePasskeys: () => void; // Callback to handle disabling passkeys
-}
+import type { DisablePasskeysProps, UserData } from "../types";
 
 const DisablePasskeys: React.FC<DisablePasskeysProps> = ({
     open,
@@ -47,11 +34,16 @@ const DisablePasskeys: React.FC<DisablePasskeysProps> = ({
             }
 
             const encodedEmail = encodeURIComponent(email);
-            const encodedToken = encodeURIComponent(token);
 
             // Fetch user data
-            const userUrl = `${apiOrigin}/admin/user?email=${encodedEmail}&token=${encodedToken}`;
-            const userResponse = await fetch(userUrl);
+            const userUrl = `${apiOrigin}/admin/user?email=${encodedEmail}`;
+            const userResponse = await fetch(userUrl, {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-Auth-Token": token,
+                },
+            });
             if (!userResponse.ok) {
                 throw new Error("Failed to fetch user data");
             }
@@ -63,11 +55,14 @@ const DisablePasskeys: React.FC<DisablePasskeysProps> = ({
             }
 
             // Disable passkeys action
-            const disablePasskeysUrl = `${apiOrigin}/admin/user/disable-passkeys?token=${encodedToken}`;
+            const disablePasskeysUrl = `${apiOrigin}/admin/user/disable-passkeys`;
             const body = JSON.stringify({ userId });
             const disablePasskeysResponse = await fetch(disablePasskeysUrl, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-Auth-Token": token,
+                },
                 body: body,
             });
 
@@ -80,7 +75,11 @@ const DisablePasskeys: React.FC<DisablePasskeysProps> = ({
             handleClose(); // Close dialog on successful action
             console.log("Passkeys disabled successfully");
         } catch (error) {
-            console.error("Error disabling passkeys:", error);
+            if (error instanceof Error) {
+                alert(error.message);
+            } else {
+                alert("Failed to disable passkeys");
+            }
         } finally {
             setLoading(false);
         }

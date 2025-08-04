@@ -1,73 +1,52 @@
-import { staticAppTitle } from "@/base/app";
-import { CustomHead } from "@/base/components/Head";
-import { AttributedMiniDialog } from "@/base/components/MiniDialog";
-import { ActivityIndicator } from "@/base/components/mui/ActivityIndicator";
-import { AppNavbar } from "@/base/components/Navbar";
-import { useAttributedMiniDialog } from "@/base/components/utils/dialog";
-import { setupI18n } from "@/base/i18n";
-import { disableDiskLogs } from "@/base/log";
-import { logUnhandledErrorsAndRejections } from "@/base/log-web";
-import { Overlay } from "@ente/shared/components/Container";
-import { getTheme } from "@ente/shared/themes";
-import { THEME_COLOR } from "@ente/shared/themes/constants";
+import "@fontsource-variable/inter";
 import { CssBaseline } from "@mui/material";
 import { ThemeProvider } from "@mui/material/styles";
+import { staticAppTitle } from "ente-base/app";
+import { assertionFailed } from "ente-base/assert";
+import { CustomHead } from "ente-base/components/Head";
+import { LoadingIndicator } from "ente-base/components/loaders";
+import { AttributedMiniDialog } from "ente-base/components/MiniDialog";
+import { useAttributedMiniDialog } from "ente-base/components/utils/dialog";
+import {
+    useSetupI18n,
+    useSetupLogs,
+} from "ente-base/components/utils/hooks-app";
+import { photosTheme } from "ente-base/components/utils/theme";
+import { BaseContext, deriveBaseContext } from "ente-base/context";
 import { t } from "i18next";
 import type { AppProps } from "next/app";
-import React, { useEffect, useMemo, useState } from "react";
-import { AppContext } from "../types/context";
-
-import "styles/global.css";
+import React, { useMemo } from "react";
 
 const App: React.FC<AppProps> = ({ Component, pageProps }) => {
-    const [isI18nReady, setIsI18nReady] = useState<boolean>(false);
-    const [showNavbar, setShowNavbar] = useState(false);
+    useSetupLogs({ disableDiskLogs: true });
+
+    const isI18nReady = useSetupI18n();
     const { showMiniDialog, miniDialogProps } = useAttributedMiniDialog();
 
-    useEffect(() => {
-        disableDiskLogs();
-        void setupI18n().finally(() => setIsI18nReady(true));
-        logUnhandledErrorsAndRejections(true);
-        return () => logUnhandledErrorsAndRejections(false);
-    }, []);
+    // No code in the accounts app is currently expected to reach a code path
+    // where they would need to "logout". Also, the accounts app doesn't store
+    // any user specific persistent state that'd need to be cleared, so there
+    // really isn't anything to do here even if we needed to.
+    const logout = assertionFailed;
 
-    const appContext = useMemo(
-        () => ({
-            showNavBar: setShowNavbar,
-            showMiniDialog,
-        }),
-        [showMiniDialog],
+    const baseContext = useMemo(
+        () => deriveBaseContext({ logout, showMiniDialog }),
+        [logout, showMiniDialog],
     );
 
     const title = isI18nReady ? t("title_accounts") : staticAppTitle;
 
     return (
-        <>
+        <ThemeProvider theme={photosTheme}>
             <CustomHead {...{ title }} />
+            <CssBaseline enableColorScheme />
+            <AttributedMiniDialog {...miniDialogProps} />
 
-            <ThemeProvider theme={getTheme(THEME_COLOR.DARK, "photos")}>
-                <CssBaseline enableColorScheme />
-                <AttributedMiniDialog {...miniDialogProps} />
-
-                <AppContext.Provider value={appContext}>
-                    {!isI18nReady && (
-                        <Overlay
-                            sx={(theme) => ({
-                                display: "flex",
-                                justifyContent: "center",
-                                alignItems: "center",
-                                zIndex: 2000,
-                                backgroundColor: theme.colors.background.base,
-                            })}
-                        >
-                            <ActivityIndicator />
-                        </Overlay>
-                    )}
-                    {showNavbar && <AppNavbar />}
-                    {isI18nReady && <Component {...pageProps} />}
-                </AppContext.Provider>
-            </ThemeProvider>
-        </>
+            <BaseContext value={baseContext}>
+                {!isI18nReady && <LoadingIndicator />}
+                {isI18nReady && <Component {...pageProps} />}
+            </BaseContext>
+        </ThemeProvider>
     );
 };
 

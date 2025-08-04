@@ -1,46 +1,36 @@
-import { PAGES } from "@/accounts/constants/pages";
-import { ActivityIndicator } from "@/base/components/mui/ActivityIndicator";
-import { customAPIHost } from "@/base/origins";
-import { LS_KEYS, getData } from "@ente/shared//storage/localStorage";
-import { VerticallyCentered } from "@ente/shared/components/Container";
-import FormPaper from "@ente/shared/components/Form/FormPaper";
+import { AccountsPageContents } from "ente-accounts/components/layouts/centered-paper";
+import { SignUpContents } from "ente-accounts/components/SignUpContents";
+import { savedPartialLocalUser } from "ente-accounts/services/accounts-db";
+import { LoadingIndicator } from "ente-base/components/loaders";
+import { customAPIHost } from "ente-base/origins";
 import { useRouter } from "next/router";
-import React, { useEffect, useState } from "react";
-import { SignUp } from "../components/SignUp";
-import type { PageProps } from "../types/page";
+import React, { useCallback, useEffect, useState } from "react";
 
-const Page: React.FC<PageProps> = ({ appContext }) => {
-    const { showNavBar } = appContext;
-
+/**
+ * A page that allows the user to signup for a new Ente account.
+ *
+ * See: [Note: Login pages]
+ */
+const Page: React.FC = () => {
     const [loading, setLoading] = useState(true);
-    const [host, setHost] = useState<string | undefined>();
+    const [host, setHost] = useState<string | undefined>(undefined);
 
     const router = useRouter();
 
     useEffect(() => {
         void customAPIHost().then(setHost);
-        const user = getData(LS_KEYS.USER);
-        if (user?.email) {
-            router.push(PAGES.VERIFY);
-        }
+        if (savedPartialLocalUser()?.email) void router.replace("/verify");
         setLoading(false);
-        showNavBar(true);
-    }, []);
+    }, [router]);
 
-    const login = () => {
-        router.push(PAGES.LOGIN);
-    };
+    const onLogin = useCallback(() => void router.push("/login"), [router]);
 
-    return (
-        <VerticallyCentered>
-            {loading ? (
-                <ActivityIndicator />
-            ) : (
-                <FormPaper>
-                    <SignUp {...{ login, router, host }} />
-                </FormPaper>
-            )}
-        </VerticallyCentered>
+    return loading ? (
+        <LoadingIndicator />
+    ) : (
+        <AccountsPageContents>
+            <SignUpContents {...{ router, host, onLogin }} />
+        </AccountsPageContents>
     );
 };
 

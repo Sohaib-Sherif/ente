@@ -48,6 +48,7 @@ const messageWithError = (message: string, e?: unknown) => {
         es = [`${e.name}: ${e.message}`, e.stack].filter((x) => x).join("\n");
     } else {
         // For the rest rare cases, use the default string serialization of e.
+        // eslint-disable-next-line @typescript-eslint/no-base-to-string
         es = String(e);
     }
 
@@ -80,6 +81,56 @@ const logDebug = (param: () => unknown) => {
         const p = param();
         console.log(`[debug] ${typeof p == "string" ? p : util.inspect(p)}`);
     }
+};
+
+/**
+ * Handle log messages posted from the utility process in the main process.
+ *
+ * See: [Note: Using Electron APIs in UtilityProcess]
+ *
+ * @param message The arbitrary message that was received as an argument to the
+ * "message" event invoked on a {@link UtilityProcess}.
+ *
+ * @returns true if the message was recognized and handled, and false otherwise.
+ */
+export const processUtilityProcessLogMessage = (
+    logTag: string,
+    message: unknown,
+) => {
+    const m = message; /* shorter alias */
+    if (m && typeof m == "object" && "method" in m && "p" in m) {
+        const p = m.p;
+        switch (m.method) {
+            case "log.errorString":
+                if (typeof p == "string") {
+                    logError(`${logTag} ${p}`);
+                    return true;
+                }
+                break;
+            case "log.warnString":
+                if (typeof p == "string") {
+                    logWarn(`${logTag} ${p}`);
+                    return true;
+                }
+                break;
+            case "log.info":
+                if (Array.isArray(p)) {
+                    // Need to cast from any[] to unknown[]
+                    logInfo(logTag, ...(p as unknown[]));
+                    return true;
+                }
+                break;
+            case "log.debugString":
+                if (typeof p == "string") {
+                    logDebug(() => `${logTag} ${p}`);
+                    return true;
+                }
+                break;
+            default:
+                break;
+        }
+    }
+    return false;
 };
 
 /**

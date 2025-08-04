@@ -13,6 +13,7 @@ import (
 	"github.com/ente-io/stacktrace"
 	"github.com/go-webauthn/webauthn/protocol"
 	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 
 	"github.com/ente-io/museum/ente"
@@ -101,6 +102,11 @@ func NewRepository(
 	return
 }
 
+func (r *Repository) GetPasskeyCount(userID int64) (count int64, err error) {
+	err = r.DB.QueryRow(`SELECT COUNT(*) FROM passkeys WHERE user_id = $1 AND deleted_at IS NULL`, userID).Scan(&count)
+	return
+}
+
 func (r *Repository) GetUserPasskeys(userID int64) (passkeys []ente.Passkey, err error) {
 	rows, err := r.DB.Query(`
 		SELECT id, user_id, friendly_name, created_at
@@ -138,7 +144,7 @@ func (r *Repository) CreateBeginRegistrationData(user *ente.User) (options *prot
 	}
 
 	if len(passkeyUser.WebAuthnCredentials()) >= ente.MaxPasskeys {
-		err = stacktrace.NewError(ente.ErrMaxPasskeysReached.Error())
+		err = stacktrace.Propagate(&ente.ErrMaxPasskeysReached, "")
 		return
 	}
 
@@ -387,7 +393,8 @@ func (r *Repository) FinishAuthentication(user *ente.User, req *http.Request, se
 
 	_, err = r.webAuthnInstance.FinishLogin(passkeyUser, *sessionData, req)
 	if err != nil {
-		err = stacktrace.Propagate(err, "")
+		logrus.Warnf("Could not finish passkey authentication: %s", err)
+		err = &ente.ApiError{Code: ente.BadRequest, Message: "Invalid signature", HttpStatusCode: http.StatusUnauthorized}
 		return
 	}
 

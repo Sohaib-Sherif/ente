@@ -9,8 +9,8 @@ The latest version of the Ente Photos desktop app can be downloaded from
 [ente.io/download](https://ente.io/download). If you're having trouble, please
 see if any of the following cases apply.
 
--   [Windows](#windows)
--   [Linux](#linux)
+- [Windows](#windows)
+- [Linux](#linux)
 
 ## Windows
 
@@ -36,9 +36,9 @@ https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=ms
 AppImages are not fully standalone, and they require additional steps to enable
 full "desktop integration":
 
--   Showing the app icon,
--   Surfacing the app in the list of installed apps,
--   Handling redirection after passkey verification.
+- Showing the app icon,
+- Surfacing the app in the list of installed apps,
+- Handling redirection after passkey verification.
 
 All the ways of enabling AppImage desktop integration are mentioned in
 [AppImage documentation](https://docs.appimage.org/user-guide/run-appimages.html#integrating-appimages-into-the-desktop).
@@ -62,11 +62,11 @@ It is possible that the exact path might be different on your machine. Briefly,
 what we need to do is create `libz.so` as an alias for `libz.so.1`. For more
 details, see the following upstream issues:
 
--   libz.so cannot open shared object file on ARM64 -
-    [AppImage/AppImageKit/issues/1092](https://github.com/AppImage/AppImageKit/issues/1092)
+- libz.so cannot open shared object file on ARM64 -
+  [AppImage/AppImageKit/issues/1092](https://github.com/AppImage/AppImageKit/issues/1092)
 
--   libz.so: cannot open shared object file with Ubuntu arm64 -
-    [electron-userland/electron-builder/issues/7835](https://github.com/electron-userland/electron-builder/issues/7835)
+- libz.so: cannot open shared object file with Ubuntu arm64 -
+  [electron-userland/electron-builder/issues/7835](https://github.com/electron-userland/electron-builder/issues/7835)
 
 ### AppImage says it requires FUSE
 
@@ -99,3 +99,17 @@ If you do want to run it from the command line, you can do so by passing the
 
 For more details, see this upstream issue on
 [electron](https://github.com/electron/electron/issues/17972).
+
+### Application reporting offline despite Internet connectivity
+
+Due to unreliability of usage of `navigator.onLine` in Linux, the app may report that you are offline, even though the internet connection is functional.
+
+You can resolve the issue by adding a dummy network interface using the following command:
+
+```shell
+ip link add dummy0 type dummy
+ip addr add 10.10.10.1/24 dev dummy0
+ip link set dummy0 up
+```
+
+Once the interface is up, Ente correctly detects that the system is online.

@@ -1,34 +1,35 @@
-import ErrorOutline from "@mui/icons-material/ErrorOutline";
+import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
 import { t } from "i18next";
 import { useCallback, useState } from "react";
 import type { MiniDialogAttributes } from "../MiniDialog";
 
 /**
  * A React hook for simplifying the provisioning of a {@link showMiniDialog}
- * function to inject in app contexts, and the other props that are needed for
- * to pass on to the {@link AttributedMiniDialog}.
+ * function to inject in app contexts, and of the other props that are needed to
+ * be passed to the {@link AttributedMiniDialog}.
  */
 export const useAttributedMiniDialog = () => {
     const [attributes, setAttributes] = useState<
         MiniDialogAttributes | undefined
-    >();
+    >(undefined);
 
     const [open, setOpen] = useState(false);
 
-    const showMiniDialog = useCallback((attributes: MiniDialogAttributes) => {
-        setAttributes(attributes);
-        setOpen(true);
-    }, []);
+    const showMiniDialog = useCallback(
+        (newAttributes: MiniDialogAttributes) => {
+            setAttributes((attributes) =>
+                attributes?.nonReplaceable ? attributes : newAttributes,
+            );
+            setOpen(true);
+        },
+        [],
+    );
 
-    const onCloseMiniDialog = useCallback(() => setOpen(false), []);
+    const handleClose = useCallback(() => setOpen(false), []);
 
     return {
         showMiniDialog,
-        miniDialogProps: {
-            open: open,
-            onClose: onCloseMiniDialog,
-            attributes: attributes,
-        },
+        miniDialogProps: { open, onClose: handleClose, attributes },
     };
 };
 
@@ -48,11 +49,11 @@ export const errorDialogAttributes = (
     optionalMessage?: string,
 ): MiniDialogAttributes => {
     const title = optionalMessage ? messageOrTitle : t("error");
-    const message = optionalMessage ? optionalMessage : messageOrTitle;
+    const message = optionalMessage ?? messageOrTitle;
 
     return {
         title,
-        icon: <ErrorOutline />,
+        icon: <ErrorOutlineIcon />,
         message,
         continue: { color: "critical" },
         cancel: false,

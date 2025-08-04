@@ -6,6 +6,9 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	t "time"
+
+	"github.com/ente-io/museum/pkg/utils/random"
 
 	"github.com/ente-io/museum/pkg/utils/random"
 
@@ -15,11 +18,13 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/ente-io/museum/ente"
+	emailCtrl "github.com/ente-io/museum/pkg/controller/email"
 	"github.com/ente-io/museum/pkg/utils/auth"
 	"github.com/ente-io/museum/pkg/utils/crypto"
 	emailUtil "github.com/ente-io/museum/pkg/utils/email"
 	"github.com/ente-io/museum/pkg/utils/time"
 	"github.com/ente-io/stacktrace"
+
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
 )
@@ -80,16 +85,8 @@ func hardcodedOTTForEmail(hardCodedOTT HardCodedOTT, email string) string {
 
 // SendEmailOTT generates and sends an OTT to the provided email address
 func (c *UserController) SendEmailOTT(context *gin.Context, email string, purpose string) error {
-	if purpose == ente.ChangeEmailOTTPurpose {
-		_, err := c.UserRepo.GetUserIDWithEmail(email)
-		if err == nil {
-			// email already owned by a user
-			return stacktrace.Propagate(ente.ErrPermissionDenied, "")
-		}
-		if !errors.Is(err, sql.ErrNoRows) {
-			// unknown error, rethrow
-			return stacktrace.Propagate(err, "")
-		}
+	if err := c.validateSendOTT(context, email, purpose); err != nil {
+		return err
 	}
 	ott, err := random.GenerateSixDigitOtp()
 	if err != nil {
@@ -132,6 +129,75 @@ func (c *UserController) SendEmailOTT(context *gin.Context, email string, purpos
 		log.Info("Added hard coded ott for " + email + " : " + ott)
 	}
 	return nil
+}
+
+func (c *UserController) isEmailAlreadyUsed(email string) error {
+	_, err := c.UserRepo.GetUserIDWithEmail(email)
+	if err == nil {
+		// email already owned by a user
+		return stacktrace.Propagate(ente.ErrPermissionDenied, "email already belongs to a user")
+	}
+	if !errors.Is(err, sql.ErrNoRows) {
+		// unknown error, rethrow
+		return stacktrace.Propagate(err, "")
+	}
+	return nil
+}
+
+func (c *UserController) validateSendOTT(ctx *gin.Context, email string, purpose string) error {
+	if purpose == ente.ChangeEmailOTTPurpose {
+		if err := c.isEmailAlreadyUsed(email); err != nil {
+			return err
+		}
+	}
+	isSignUpComplete, err := c.isSignUpComplete(email)
+	if err != nil {
+		return stacktrace.Propagate(err, "")
+	}
+	if purpose == ente.SignUpOTTPurpose && viper.GetBool("internal.disable-registration") && !isSignUpComplete {
+		return stacktrace.Propagate(ente.ErrPermissionDenied, "registration is disabled")
+	}
+	//
+	var registrationErr error
+	if purpose == ente.SignUpOTTPurpose && isSignUpComplete {
+		registrationErr = stacktrace.Propagate(ente.ErrUserAlreadyRegistered, "user has already completed sign up process")
+	}
+	if purpose == ente.LoginOTTPurpose && !isSignUpComplete {
+		registrationErr = stacktrace.Propagate(ente.ErrUserNotRegistered, "user has not completed sign up process")
+	}
+	// if no registration error, return
+	if registrationErr == nil {
+		return registrationErr
+	}
+	// check & swallow registration information error if too many such
+	// errors are generated in a short time
+	if limiter, limitErr := c.OTTLimiter.Get(ctx, "send-ott"); limitErr != nil {
+		if limiter.Reached {
+			go c.DiscordController.NotifyPotentialAbuse("swallowing send-ott registration error")
+			return nil
+		}
+	}
+	return registrationErr
+}
+
+// isSignUpComplete checks if the user has completed the entire signup process.
+// Sign up is considered complete if the user has verified their email address and their key attributes are set.
+func (c *UserController) isSignUpComplete(email string) (bool, error) {
+	userID, err := c.UserRepo.GetUserIDWithEmail(email)
+	if err != nil && errors.Is(err, sql.ErrNoRows) {
+		return false, nil
+	}
+	if err != nil {
+		return false, stacktrace.Propagate(err, "")
+	}
+	_, keyErr := c.UserRepo.GetKeyAttributes(userID)
+	if keyErr != nil && errors.Is(keyErr, sql.ErrNoRows) {
+		return false, nil
+	}
+	if keyErr != nil {
+		return false, stacktrace.Propagate(keyErr, "")
+	}
+	return true, nil
 }
 
 func (c *UserController) AddAdminOtt(req ente.AdminOttReq) error {
@@ -290,6 +356,28 @@ func (c *UserController) GetActiveSessions(context *gin.Context, userID int64) (
 	return tokens, nil
 }
 
+func (c *UserController) AddTokenAndNotify(userID int64, app ente.App, token string, ip string, userAgent string) error {
+	err := c.UserAuthRepo.AddToken(userID, app, token, ip, userAgent)
+	if err != nil {
+		return stacktrace.Propagate(err, "failed to insert token")
+	}
+
+	go func() {
+		user, userErr := c.UserRepo.GetUserByIDInternal(userID)
+		if userErr != nil {
+			log.WithError(userErr).Error("Failed to get user")
+			return
+		}
+		emailSendErr := emailUtil.SendTemplatedEmail([]string{user.Email}, "Ente", "team@ente.io", emailCtrl.LoginSuccessSubject, emailCtrl.LoginSuccessTemplate, map[string]interface{}{
+			"Date": t.Now().UTC().Format("02 Jan, 2006 15:04"),
+		}, nil)
+		if emailSendErr != nil {
+			log.WithError(emailSendErr).Error("Failed to send email")
+		}
+	}()
+	return nil
+}
+
 // TerminateSession removes the token for a user from cache and database
 func (c *UserController) TerminateSession(userID int64, token string) error {
 	c.Cache.Delete(fmt.Sprintf("%s:%s", ente.Photos, token))
@@ -323,9 +411,13 @@ func (c *UserController) onVerificationSuccess(context *gin.Context, email strin
 	userID, err := c.UserRepo.GetUserIDWithEmail(email)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			userID, _, err = c.createUser(email, source)
-			if err != nil {
-				return ente.EmailAuthorizationResponse{}, stacktrace.Propagate(err, "")
+			if viper.GetBool("internal.disable-registration") {
+				return ente.EmailAuthorizationResponse{}, stacktrace.Propagate(ente.ErrPermissionDenied, "")
+			} else {
+				userID, _, err = c.createUser(email, source)
+				if err != nil {
+					return ente.EmailAuthorizationResponse{}, stacktrace.Propagate(err, "")
+				}
 			}
 		} else {
 			return ente.EmailAuthorizationResponse{}, stacktrace.Propagate(err, "")
@@ -340,10 +432,10 @@ func (c *UserController) onVerificationSuccess(context *gin.Context, email strin
 	if err != nil {
 		return ente.EmailAuthorizationResponse{}, stacktrace.Propagate(err, "")
 	}
+	var passKeySessionID, twoFactorSessionID string
 
-	// if the user has passkeys, we will prioritize that over secret TOTP
 	if hasPasskeys {
-		passKeySessionID, err := auth.GenerateURLSafeRandomString(PassKeySessionIDLength)
+		passKeySessionID, err = auth.GenerateURLSafeRandomString(PassKeySessionIDLength)
 		if err != nil {
 			return ente.EmailAuthorizationResponse{}, stacktrace.Propagate(err, "")
 		}
@@ -351,20 +443,24 @@ func (c *UserController) onVerificationSuccess(context *gin.Context, email strin
 		if err != nil {
 			return ente.EmailAuthorizationResponse{}, stacktrace.Propagate(err, "")
 		}
-		return ente.EmailAuthorizationResponse{ID: userID, PasskeySessionID: passKeySessionID}, nil
-	} else {
-		if isTwoFactorEnabled {
-			twoFactorSessionID, err := auth.GenerateURLSafeRandomString(TwoFactorSessionIDLength)
-			if err != nil {
-				return ente.EmailAuthorizationResponse{}, stacktrace.Propagate(err, "")
-			}
-			err = c.TwoFactorRepo.AddTwoFactorSession(userID, twoFactorSessionID, time.Microseconds()+TwoFactorValidityDurationInMicroSeconds)
-			if err != nil {
-				return ente.EmailAuthorizationResponse{}, stacktrace.Propagate(err, "")
-			}
-			return ente.EmailAuthorizationResponse{ID: userID, TwoFactorSessionID: twoFactorSessionID}, nil
+	}
+	if isTwoFactorEnabled {
+		twoFactorSessionID, err = auth.GenerateURLSafeRandomString(TwoFactorSessionIDLength)
+		if err != nil {
+			return ente.EmailAuthorizationResponse{}, stacktrace.Propagate(err, "")
 		}
-
+		err = c.TwoFactorRepo.AddTwoFactorSession(userID, twoFactorSessionID, time.Microseconds()+TwoFactorValidityDurationInMicroSeconds)
+		if err != nil {
+			return ente.EmailAuthorizationResponse{}, stacktrace.Propagate(err, "")
+		}
+	}
+	accountsUrl := viper.GetString("apps.accounts")
+	if hasPasskeys && isTwoFactorEnabled {
+		return ente.EmailAuthorizationResponse{ID: userID, PasskeySessionID: passKeySessionID, AccountsUrl: accountsUrl, TwoFactorSessionIDV2: twoFactorSessionID}, nil
+	} else if hasPasskeys {
+		return ente.EmailAuthorizationResponse{ID: userID, PasskeySessionID: passKeySessionID, AccountsUrl: accountsUrl}, nil
+	} else if isTwoFactorEnabled {
+		return ente.EmailAuthorizationResponse{ID: userID, TwoFactorSessionID: twoFactorSessionID}, nil
 	}
 
 	token, err := auth.GenerateURLSafeRandomString(TokenLength)
@@ -374,6 +470,8 @@ func (c *UserController) onVerificationSuccess(context *gin.Context, email strin
 	keyAttributes, err := c.UserRepo.GetKeyAttributes(userID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
+			// user creation is pending on key attributes set based on the password.
+			// No need to send login notification
 			err = c.UserAuthRepo.AddToken(userID, auth.GetApp(context), token,
 				network.GetClientIP(context), context.Request.UserAgent())
 			if err != nil {
@@ -388,7 +486,7 @@ func (c *UserController) onVerificationSuccess(context *gin.Context, email strin
 	if err != nil {
 		return ente.EmailAuthorizationResponse{}, stacktrace.Propagate(err, "")
 	}
-	err = c.UserAuthRepo.AddToken(userID, auth.GetApp(context), token,
+	err = c.AddTokenAndNotify(userID, auth.GetApp(context), token,
 		network.GetClientIP(context), context.Request.UserAgent())
 	if err != nil {
 		return ente.EmailAuthorizationResponse{}, stacktrace.Propagate(err, "")
@@ -404,7 +502,7 @@ func (c *UserController) onVerificationSuccess(context *gin.Context, email strin
 func convertStringToBytes(s string) []byte {
 	b, err := base64.StdEncoding.DecodeString(s)
 	if err != nil {
-		log.Fatal(err)
+		panic(fmt.Sprintf("failed to base64dDecode string %s", s))
 	}
 	return b
 }

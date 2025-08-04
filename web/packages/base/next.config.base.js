@@ -31,10 +31,7 @@ const gitSHA = (() => {
             ? "git rev-parse --short HEAD 2> NUL || cd ."
             : "git rev-parse --short HEAD 2>/dev/null || true";
     const result = cp
-        .execSync(command, {
-            cwd: __dirname,
-            encoding: "utf8",
-        })
+        .execSync(command, { cwd: __dirname, encoding: "utf8" })
         .trimEnd();
     // Convert empty strings (e.g. when the `|| true` part of the above execSync
     // comes into play) to undefined.
@@ -67,7 +64,7 @@ const isDesktop = process.env._ENTE_IS_DESKTOP ? "1" : "";
 
 /**
  * When we're running within the desktop app, also extract the version of the
- * desktop app for use in our "X-Client-Package" string.
+ * desktop app for use in our "X-Client-Version" string.
  *
  * > The web app has continuous deployments, and doesn't have versions.
  */
@@ -75,6 +72,26 @@ const desktopAppVersion = isDesktop
     ? JSON.parse(fs.readFileSync("../../../desktop/package.json", "utf-8"))
           .version
     : undefined;
+
+// Fail the build if the user is setting any of the legacy environment variables
+// which have now been replaced with museum configuration. This is meant to help
+// self hosters find the new setting instead of being caught unawares.
+
+if (process.env.NEXT_PUBLIC_ENTE_ACCOUNTS_URL) {
+    console.log(
+        "The NEXT_PUBLIC_ENTE_ACCOUNTS_URL environment variable is not supported.",
+    );
+    console.log("Use apps.accounts in the museum configuration instead.");
+    process.exit(1);
+}
+
+if (process.env.NEXT_PUBLIC_ENTE_FAMILY_URL) {
+    console.log(
+        "The NEXT_PUBLIC_ENTE_FAMILY_URL environment variable is not supported.",
+    );
+    console.log("Use apps.family in the museum configuration instead.");
+    process.exit(1);
+}
 
 /**
  * Configuration for the Next.js build
@@ -84,20 +101,23 @@ const desktopAppVersion = isDesktop
 const nextConfig = {
     // Generate a static export when we run `next build`.
     output: "export",
-    compiler: {
-        emotion: true,
-    },
+    // Instead of the nice and useful HMR indicator that used to exist prior to
+    // 15.2, the Next.js folks have made this a persistent "branding" indicator
+    // that gets in the way and needs to be disabled.
+    devIndicators: false,
+    compiler: { emotion: true },
     // Use Next.js to transpile our internal packages before bundling them.
-    transpilePackages: ["@/base", "@/utils", "@/new"],
+    transpilePackages: ["ente-base", "ente-utils", "ente-new"],
 
     // Add environment variables to the JavaScript bundle. They will be
     // available as `process.env.varName` to our code.
-    env: {
-        gitSHA,
-        appName,
-        isDesktop,
-        desktopAppVersion,
-    },
+    env: { gitSHA, appName, isDesktop, desktopAppVersion },
+
+    // Ask Next to use a separate dist directory for the desktop during
+    // development. This allows us run dev servers simultaneously for both web
+    // and desktop code without them stepping on each others toes.
+    ...(process.env.NODE_ENV != "production" &&
+        isDesktop && { distDir: ".next-desktop" }),
 
     // Customize the webpack configuration used by Next.js.
     webpack: (config, { isServer }) => {

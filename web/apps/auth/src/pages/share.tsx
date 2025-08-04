@@ -1,6 +1,8 @@
-import { EnteLogo } from "@/base/components/EnteLogo";
-import { decryptMetadataJSON_New } from "@/base/crypto";
+import { Box, Button, Stack, Typography, useTheme } from "@mui/material";
+import { EnteLogo } from "ente-base/components/EnteLogo";
+import { decryptMetadataJSON } from "ente-base/crypto";
 import React, { useEffect, useMemo, useState } from "react";
+import { prettyFormatCode } from "utils/format";
 
 interface SharedCode {
     startTime: number;
@@ -8,13 +10,7 @@ interface SharedCode {
     codes: string;
 }
 
-interface CodeDisplay {
-    currentCode: string;
-    nextCode: string;
-    progress: number;
-}
-
-const Share: React.FC = () => {
+const Page: React.FC = () => {
     const [sharedCode, setSharedCode] = useState<SharedCode | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [timeStatus, setTimeStatus] = useState<number>(-10);
@@ -24,30 +20,7 @@ const Share: React.FC = () => {
         progress: 0,
     });
 
-    const base64UrlToByteArray = (base64Url: string): Uint8Array => {
-        const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-        return Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
-    };
-
-    const formatCode = (code: string): string =>
-        code.replace(/(.{3})/g, "$1 ").trim();
-
-    const getCodeDisplay = (
-        codes: string[],
-        startTime: number,
-        stepDuration: number,
-    ): CodeDisplay => {
-        const currentTime = Date.now();
-        const elapsedTime = (currentTime - startTime) / 1000;
-        const index = Math.floor(elapsedTime / stepDuration);
-        const progress = ((elapsedTime % stepDuration) / stepDuration) * 100;
-
-        return {
-            currentCode: formatCode(codes[index] || ""),
-            nextCode: formatCode(codes[index + 1] || ""),
-            progress,
-        };
-    };
+    const theme = useTheme();
 
     const getTimeStatus = (
         currentTime: number,
@@ -74,12 +47,12 @@ const Share: React.FC = () => {
             }
 
             try {
-                const decryptedCode = (await decryptMetadataJSON_New(
+                const decryptedCode = (await decryptMetadataJSON(
                     {
-                        encryptedData: base64UrlToByteArray(data),
-                        decryptionHeader: base64UrlToByteArray(header),
+                        encryptedData: base64URLToBytes(data),
+                        decryptionHeader: base64URLToBytes(header),
                     },
-                    base64UrlToByteArray(key),
+                    base64URLToBytes(key),
                 )) as SharedCode;
                 setSharedCode(decryptedCode);
             } catch (error) {
@@ -89,13 +62,17 @@ const Share: React.FC = () => {
                 );
             }
         };
-        decryptCode();
+        void decryptCode();
     }, []);
 
     useEffect(() => {
         if (!sharedCode) return;
 
+        let done = false;
+
         const updateCode = () => {
+            if (done) return;
+
             const currentTime = Date.now();
             const codes = sharedCode.codes.split(",");
             const status = getTimeStatus(
@@ -108,68 +85,83 @@ const Share: React.FC = () => {
 
             if (status === 0) {
                 setCodeDisplay(
-                    getCodeDisplay(
+                    parseCodeDisplay(
                         codes,
                         sharedCode.startTime,
                         sharedCode.step,
                     ),
                 );
             }
+
+            requestAnimationFrame(updateCode);
         };
 
-        const interval = setInterval(updateCode, 100);
-        return () => clearInterval(interval);
+        updateCode();
+
+        return () => {
+            done = true;
+        };
     }, [sharedCode]);
 
     const progressBarColor = useMemo(
-        () => (100 - codeDisplay.progress > 40 ? "#8E2DE2" : "#FFC107"),
-        [codeDisplay.progress],
-    );
-
-    const Message: React.FC<{ text: string }> = ({ text }) => (
-        <p style={{ textAlign: "center", fontSize: "24px" }}>{text}</p>
+        () =>
+            100 - codeDisplay.progress > 40
+                ? theme.vars.palette.accent.light
+                : theme.vars.palette.warning.main,
+        [theme, codeDisplay.progress],
     );
 
     return (
-        <div
-            style={{
-                display: "flex",
-                flexDirection: "column",
+        <Stack
+            sx={{
                 justifyContent: "space-between",
                 alignItems: "center",
                 height: "100vh",
-                backgroundColor: "#000000",
-                color: "#FFFFFF",
                 padding: "20px",
             }}
         >
             <EnteLogo />
 
-            <div style={{ width: "100%", maxWidth: "300px" }}>
-                {error && <p style={{ color: "red" }}>{error}</p>}
+            <Box sx={{ width: "min(100%, 300px)" }}>
+                {error && (
+                    <Typography
+                        sx={{ textAlign: "center", color: "critical.main" }}
+                    >
+                        {error}
+                    </Typography>
+                )}
                 {timeStatus === -10 && !error && (
-                    <Message text="Decrypting..." />
+                    <Message>{"Decrypting..."}</Message>
                 )}
                 {timeStatus === -1 && (
-                    <Message text="Your or the person who shared the code has out of sync time." />
+                    <Message>
+                        Your or the person who shared the code has out of sync
+                        time.
+                    </Message>
                 )}
-                {timeStatus === 1 && <Message text="The code has expired." />}
+                {timeStatus === 1 && <Message>The code has expired.</Message>}
                 {timeStatus === 0 && (
-                    <div
-                        style={{
-                            backgroundColor: "#1C1C1E",
+                    <Box
+                        sx={(theme) => ({
+                            backgroundColor: "background.elevatedPaper",
+                            ...theme.applyStyles("dark", {
+                                backgroundColor: "#1c1c1e",
+                            }),
                             borderRadius: "10px",
-                            paddingBottom: "20px",
+                            pb: "20px",
                             position: "relative",
-                        }}
+                        })}
                     >
-                        <div
-                            style={{
+                        <Box
+                            sx={(theme) => ({
                                 width: "100%",
                                 height: "4px",
-                                backgroundColor: "#333333",
+                                backgroundColor: "#eee",
+                                ...theme.applyStyles("dark", {
+                                    backgroundColor: "#333",
+                                }),
                                 borderRadius: "2px",
-                            }}
+                            })}
                         >
                             <div
                                 style={{
@@ -179,7 +171,7 @@ const Share: React.FC = () => {
                                     borderRadius: "2px",
                                 }}
                             />
-                        </div>
+                        </Box>
                         <div
                             style={{
                                 fontSize: "36px",
@@ -194,50 +186,78 @@ const Share: React.FC = () => {
                                 position: "absolute",
                                 right: "20px",
                                 bottom: "20px",
-                                fontSize: "12px",
-                                opacity: 0.6,
                             }}
                         >
-                            <p style={{ margin: 0 }}>
+                            <Typography
+                                variant="mini"
+                                sx={{ color: "text.faint" }}
+                            >
                                 {codeDisplay.nextCode === ""
                                     ? "Last code"
                                     : "next"}
-                            </p>
+                            </Typography>
                             {codeDisplay.nextCode !== "" && (
-                                <p style={{ margin: 0 }}>
+                                <Typography
+                                    variant="mini"
+                                    sx={{ color: "text.faint" }}
+                                >
                                     {codeDisplay.nextCode}
-                                </p>
+                                </Typography>
                             )}
                         </div>
-                    </div>
+                    </Box>
                 )}
-            </div>
+            </Box>
 
-            <a
+            <Button
+                color="accent"
+                sx={{
+                    backgroundColor: "accent.light",
+                    borderRadius: "25px",
+                    padding: "15px 30px",
+                    marginBottom: "42px",
+                }}
                 href="https://ente.io/auth"
                 target="_blank"
-                rel="noopener noreferrer"
             >
-                <button
-                    style={{
-                        backgroundColor: "#8E2DE2",
-                        color: "#FFFFFF",
-                        border: "none",
-                        borderRadius: "25px",
-                        padding: "15px 30px",
-                        fontSize: "16px",
-                        fontWeight: "bold",
-                        cursor: "pointer",
-                        width: "100%",
-                        maxWidth: "300px",
-                        marginBottom: "42px",
-                    }}
-                >
-                    Try Ente Auth
-                </button>
-            </a>
-        </div>
+                Try Ente Auth
+            </Button>
+        </Stack>
     );
 };
 
-export default Share;
+export default Page;
+
+const base64URLToBytes = (base64URL: string): Uint8Array => {
+    const base64 = base64URL.replace(/-/g, "+").replace(/_/g, "/");
+    return Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+};
+
+interface CodeDisplay {
+    currentCode: string;
+    nextCode: string;
+    progress: number;
+}
+
+const parseCodeDisplay = (
+    codes: string[],
+    startTime: number,
+    stepDuration: number,
+): CodeDisplay => {
+    const currentTime = Date.now();
+    const elapsedTime = (currentTime - startTime) / 1000;
+    const index = Math.floor(elapsedTime / stepDuration);
+    const progress = ((elapsedTime % stepDuration) / stepDuration) * 100;
+
+    return {
+        currentCode: prettyFormatCode(codes[index] ?? ""),
+        nextCode: prettyFormatCode(codes[index + 1] ?? ""),
+        progress,
+    };
+};
+
+const Message: React.FC<React.PropsWithChildren> = ({ children }) => (
+    <Typography variant="h4" style={{ textAlign: "center" }}>
+        {children}
+    </Typography>
+);

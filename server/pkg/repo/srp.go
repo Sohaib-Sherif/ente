@@ -19,6 +19,12 @@ func (repo *UserAuthRepository) AddSRPSession(srpUserID uuid.UUID, serverKey str
 	return id, stacktrace.Propagate(err, "")
 }
 
+func (repo *UserAuthRepository) GetUnverifiedSessionsInLastHour(srpUserID uuid.UUID) (int64, error) {
+	var count int64
+	err := repo.DB.QueryRow(`SELECT COUNT(*) FROM srp_sessions WHERE srp_user_id = $1 AND has_verified = false AND created_at > (now_utc_micro_seconds() - (60::BIGINT * 60 * 1000 * 1000))`, srpUserID).Scan(&count)
+	return count, stacktrace.Propagate(err, "")
+}
+
 func (repo *UserAuthRepository) GetSRPAuthEntity(ctx context.Context, userID int64) (*ente.SRPAuthEntity, error) {
 	result := ente.SRPAuthEntity{}
 	row := repo.DB.QueryRowContext(ctx, `SELECT user_id, srp_user_id, salt, verifier FROM srp_auth WHERE user_id = $1`, userID)
@@ -129,6 +135,9 @@ func (repo *UserAuthRepository) InsertOrUpdateSRPAuthAndKeyAttr(ctx context.Cont
 		return stacktrace.Propagate(err, "")
 	}
 	updateKeyAttr := *req.UpdateAttributes
+	if validErr := updateKeyAttr.Validate(); validErr != nil {
+		return stacktrace.Propagate(validErr, "")
+	}
 	_, err = tx.ExecContext(ctx, `UPDATE key_attributes SET kek_salt = $1, encrypted_key = $2, key_decryption_nonce = $3, mem_limit = $4, ops_limit = $5 WHERE user_id = $6`,
 		updateKeyAttr.KEKSalt, updateKeyAttr.EncryptedKey, updateKeyAttr.KeyDecryptionNonce, updateKeyAttr.MemLimit, updateKeyAttr.OpsLimit, userID)
 	if err != nil {

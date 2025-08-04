@@ -1,7 +1,6 @@
 package filedata
 
 import (
-	"fmt"
 	"github.com/ente-io/museum/ente"
 	"github.com/ente-io/museum/ente/filedata"
 	"github.com/ente-io/museum/pkg/utils/auth"
@@ -9,12 +8,11 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func (c *Controller) GetPreviewUrl(ctx *gin.Context, request filedata.GetPreviewURLRequest) (*string, error) {
+func (c *Controller) GetPreviewUrl(ctx *gin.Context, actorUser int64, request filedata.GetPreviewURLRequest) (*string, error) {
 	if err := request.Validate(); err != nil {
 		return nil, err
 	}
-	actorUser := auth.GetUserID(ctx.Request.Header)
-	if err := c._validatePermission(ctx, request.FileID, actorUser); err != nil {
+	if err := c._checkMetadataReadOrWritePerm(ctx, actorUser, []int64{request.FileID}); err != nil {
 		return nil, err
 	}
 	data, err := c.Repo.GetFilesData(ctx, request.Type, []int64{request.FileID})
@@ -31,24 +29,39 @@ func (c *Controller) GetPreviewUrl(ctx *gin.Context, request filedata.GetPreview
 	return &enteUrl.URL, nil
 }
 
-func (c *Controller) PreviewUploadURL(ctx *gin.Context, request filedata.PreviewUploadUrlRequest) (*string, error) {
+func (c *Controller) PreviewUploadURL(ctx *gin.Context, request filedata.PreviewUploadUrlRequest) (*filedata.PreviewUploadUrl, error) {
 	if err := request.Validate(); err != nil {
 		return nil, err
 	}
 	actorUser := auth.GetUserID(ctx.Request.Header)
-	if err := c._validatePermission(ctx, request.FileID, actorUser); err != nil {
+	if err := c._checkPreviewWritePerm(ctx, request.FileID, actorUser); err != nil {
 		return nil, err
 	}
 	fileOwnerID, err := c.FileRepo.GetOwnerID(request.FileID)
 	if err != nil {
 		return nil, stacktrace.Propagate(err, "")
 	}
+	id := filedata.NewUploadID(request.Type)
 	// note: instead of the final url, give a temp url for upload purpose.
-	uploadUrl := fmt.Sprintf("%s_temp_upload", filedata.PreviewUrl(request.FileID, fileOwnerID, request.Type))
+	objectKey := filedata.ObjectKey(request.FileID, fileOwnerID, request.Type, &id)
 	bucketID := c.S3Config.GetBucketID(request.Type)
-	enteUrl, err := c.getUploadURL(bucketID, uploadUrl)
+	if request.IsMultiPart {
+		multiPartUploadURLs, err2 := c.getMultiPartUploadURL(bucketID, objectKey, request.Count)
+		if err2 != nil {
+			return nil, stacktrace.Propagate(err2, "")
+		}
+		return &filedata.PreviewUploadUrl{
+			ObjectID:    id,
+			PartURLs:    &multiPartUploadURLs.PartURLs,
+			CompleteURL: &multiPartUploadURLs.CompleteURL,
+		}, nil
+	}
+	enteUrl, err := c.getUploadURL(bucketID, objectKey)
 	if err != nil {
 		return nil, stacktrace.Propagate(err, "")
 	}
-	return &enteUrl.URL, nil
+	return &filedata.PreviewUploadUrl{
+		ObjectID: id,
+		Url:      &enteUrl.URL,
+	}, nil
 }

@@ -14,11 +14,11 @@ a second factor to secure your Ente account.**
 > Passkeys are the colloquial term for a WebAuthn (Web Authentication)
 > credentials.
 >
-> -   More details about why and how are in the Passkeys announcement
->     [blog post](https://ente.io/blog/introducing-passkeys-on-ente/).
-> -   And to know more technical details about how our passkey verification
->     works, you can see this
->     [technical note in our source code](https://github.com/ente-io/ente/blob/main/web/docs/webauthn-passkeys.md).
+> - More details about why and how are in the Passkeys announcement
+>   [blog post](https://ente.io/blog/introducing-passkeys-on-ente/).
+> - And to know more technical details about how our passkey verification works,
+>   you can see this
+>   [technical note in our source code](https://github.com/ente-io/ente/blob/main/web/docs/webauthn-passkeys.md).
 
 ## Passkeys and TOTP
 
@@ -59,3 +59,6 @@ then select the "Recover two-factor" option in the error message that gets
 shown. This will take you to a place where you can enter your Ente recovery key
 and login into your account. Now you can go to the _Passkey_ page to delete the
 lost passkey and/or add a new one.
+
+If you have lost access to both your passkey and recovery key, please reach out
+to [support@ente.io](mailto:support@ente.io) for help.

@@ -2,9 +2,11 @@ package user
 
 import (
 	"errors"
+
 	"github.com/ente-io/museum/ente"
 	"github.com/ente-io/museum/ente/details"
 	bonus "github.com/ente-io/museum/ente/storagebonus"
+	"github.com/ente-io/museum/pkg/utils/billing"
 	"github.com/ente-io/museum/pkg/utils/recover"
 	"github.com/ente-io/museum/pkg/utils/time"
 	"github.com/ente-io/stacktrace"
@@ -27,6 +29,7 @@ func (c *UserController) GetDetailsV2(ctx *gin.Context, userID int64, fetchMemor
 	var familyData *ente.FamilyMemberResponse
 	var subscription *ente.Subscription
 	var canDisableEmailMFA bool
+	var passkeyCount int64
 	var fileCount, sharedCollectionCount, usage int64
 	var bonus *bonus.ActiveStorageBonus
 	g.Go(func() error {
@@ -68,8 +71,17 @@ func (c *UserController) GetDetailsV2(ctx *gin.Context, userID int64, fetchMemor
 		canDisableEmailMFA = isSRPSetupDone
 		return nil
 	})
+
 	g.Go(func() error {
 		return recover.Int64ToInt64RecoverWrapper(userID, c.FileRepo.GetUsage, &usage)
+	})
+	g.Go(func() error {
+		cnt, err := c.PasskeyRepo.GetPasskeyCount(userID)
+		if err != nil {
+			return stacktrace.Propagate(err, "")
+		}
+		passkeyCount = cnt
+		return nil
 	})
 
 	if fetchMemoryCount {
@@ -90,11 +102,15 @@ func (c *UserController) GetDetailsV2(ctx *gin.Context, userID int64, fetchMemor
 		return details.UserDetailsResponse{}, stacktrace.Propagate(err, "")
 	}
 	var planStoreForBonusComputation = subscription.Storage
-	if subscription.ExpiryTime < time.Microseconds() {
+	expiryBuffer := int64(0)
+	if value, ok := billing.ProviderToExpiryGracePeriodMap[subscription.PaymentProvider]; ok {
+		expiryBuffer = value
+	}
+	if (subscription.ExpiryTime + expiryBuffer) < time.Microseconds() {
 		planStoreForBonusComputation = 0
 	}
 	if familyData != nil {
-		if familyData.ExpiryTime < time.Microseconds() {
+		if (familyData.ExpiryTime + expiryBuffer) < time.Microseconds() {
 			familyData.Storage = 0
 		} else {
 			planStoreForBonusComputation = familyData.Storage
@@ -111,6 +127,7 @@ func (c *UserController) GetDetailsV2(ctx *gin.Context, userID int64, fetchMemor
 			CanDisableEmailMFA: canDisableEmailMFA,
 			IsEmailMFAEnabled:  *user.IsEmailMFAEnabled,
 			IsTwoFactorEnabled: *user.IsTwoFactorEnabled,
+			PasskeyCount:       passkeyCount,
 		},
 		BonusData: bonus,
 	}

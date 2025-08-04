@@ -1,9 +1,9 @@
-import { assertionFailed } from "@/base/assert";
-import log from "@/base/log";
-import type { EnteFile } from "@/media/file";
-import { shuffled } from "@/utils/array";
-import { ensure } from "@/utils/ensure";
-import { getLocalFiles } from "../files";
+import { assertionFailed } from "ente-base/assert";
+import log from "ente-base/log";
+import type { EnteFile } from "ente-media/file";
+import { fileCreationTime } from "ente-media/file-metadata";
+import { randomSample } from "ente-utils/array";
+import { computeNormalCollectionFilesFromSaved } from "../file";
 import {
     savedCGroups,
     updateOrCreateUserEntities,
@@ -58,12 +58,20 @@ export interface CGroupUserEntityData {
      */
     name?: string | undefined;
     /**
-     * An unordered set ofe clusters that have been assigned to this group.
+     * An unordered set of clusters that have been assigned to this group.
      *
      * For ease of transportation and persistence this is an array, but it
      * should conceptually be thought of as a set.
      */
     assigned: FaceCluster[];
+    /**
+     * An unordered set of faces (IDs) that the user has manually marked as not
+     * belonging to this group.
+     *
+     * For ease of transportation and persistence this is an array, but it
+     * should conceptually be thought of as a set.
+     */
+    rejectedFaceIDs: string[];
     /**
      * True if this cluster group should be hidden.
      *
@@ -80,10 +88,10 @@ export interface CGroupUserEntityData {
      *
      * This is similar to the [@link displayFaceID}, the difference being:
      *
-     * -   {@link avatarFaceID} is the face selected by the user.
+     * - {@link avatarFaceID} is the face selected by the user.
      *
-     * -   {@link displayFaceID} is the automatic placeholder, and only comes
-     *     into effect if the user has not explicitly selected a face.
+     * - {@link displayFaceID} is the automatic placeholder, and only comes into
+     *   effect if the user has not explicitly selected a face.
      *
      * Also, see: [Note: Mark optional for Zod/exactOptionalPropertyTypes]
      */
@@ -151,9 +159,7 @@ export type ClusterPerson = Exclude<Person, { type: "cgroup" }>;
 /**
  * A {@link Person} whose name is not empty.
  */
-export type NamedPerson = Person & {
-    name: string;
-};
+export type NamedPerson = Person & { name: string };
 
 /**
  * A face ID annotated with the {@link EnteFile} that contains it.
@@ -207,8 +213,8 @@ export interface PeopleState {
  * construct an in-memory list of {@link Person}s on which the UI will operate.
  */
 export const reconstructPeopleState = async (): Promise<PeopleState> => {
-    const files = await getLocalFiles("normal");
-    const fileByID = new Map(files.map((f) => [f.id, f]));
+    const normalCollectionFiles = await computeNormalCollectionFilesFromSaved();
+    const fileByID = new Map(normalCollectionFiles.map((f) => [f.id, f]));
 
     // "Person face"s are faces annotated with their corresponding local files.
     //
@@ -240,8 +246,8 @@ export const reconstructPeopleState = async (): Promise<PeopleState> => {
             .map((faceID) => personFaceByID.get(faceID))
             .filter((pf) => !!pf)
             .sort((a, b) => {
-                const at = a.file.metadata.creationTime;
-                const bt = b.file.metadata.creationTime;
+                const at = fileCreationTime(a.file);
+                const bt = fileCreationTime(b.file);
                 return bt == at ? b.score - a.score : bt - at;
             });
 
@@ -260,11 +266,20 @@ export const reconstructPeopleState = async (): Promise<PeopleState> => {
         // their name to an empty string.
         if (!name) isHidden = true;
 
+        let assignedFaceIDs: string[][];
+        if (data.rejectedFaceIDs.length == 0) {
+            // Fast path for when there are no rejected faces.
+            assignedFaceIDs = assigned.map(({ faces }) => faces);
+        } else {
+            const rejectedFaceIDs = new Set(data.rejectedFaceIDs);
+            assignedFaceIDs = assigned.map(({ faces }) =>
+                faces.filter((id) => !rejectedFaceIDs.has(id)),
+            );
+        }
+
         // Person faces from all the clusters assigned to this cgroup, sorted by
         // recency (then score).
-        const faces = personFacesSortedNewestFirst(
-            assigned.map(({ faces }) => faces).flat(),
-        );
+        const faces = personFacesSortedNewestFirst(assignedFaceIDs.flat());
 
         // Ignore this cgroup if we don't have visible faces left in it.
         const mostRecentFace = faces[0];
@@ -429,7 +444,12 @@ export const _suggestionsAndChoicesForPerson = async (
 ): Promise<PersonSuggestionsAndChoices> => {
     const startTime = Date.now();
 
-    const personClusters = person.cgroup.data.assigned;
+    const rejectedFaceIDs = new Set(person.cgroup.data.rejectedFaceIDs);
+    const personClusters = person.cgroup.data.assigned.map((cluster) => ({
+        ...cluster,
+        faces: cluster.faces.filter((id) => !rejectedFaceIDs.has(id)),
+    }));
+
     const rejectedClusterIDs = new Set(
         await savedRejectedClustersForCGroup(person.cgroup.id),
     );
@@ -487,7 +507,7 @@ export const _suggestionsAndChoicesForPerson = async (
 
         if (csims.length == 0) continue;
 
-        const medianSim = ensure(csims[Math.floor(csims.length / 2)]);
+        const medianSim = csims[Math.floor(csims.length / 2)]!;
         if (medianSim > 0.48) {
             candidateClustersAndSimilarity.push([cluster, medianSim]);
         }
@@ -499,9 +519,8 @@ export const _suggestionsAndChoicesForPerson = async (
 
     // Annotate the clusters with the information that the UI needs to show its
     // preview faces.
-
-    const files = await getLocalFiles("normal");
-    const fileByID = new Map(files.map((f) => [f.id, f]));
+    const normalCollectionFiles = await computeNormalCollectionFilesFromSaved();
+    const fileByID = new Map(normalCollectionFiles.map((f) => [f.id, f]));
 
     const toPreviewable = (cluster: FaceCluster) => {
         const previewFaces: PreviewableFace[] = [];
@@ -550,7 +569,7 @@ export const _suggestionsAndChoicesForPerson = async (
     // Ensure that the first item in the choices is not an ignored one, even if
     // that is what we'd have ended up with if we sorted by size.
 
-    const firstChoice = { ...ensure(assignedChoices[0]), fixed: true };
+    const firstChoice = { ...assignedChoices[0]!, fixed: true };
     const restChoices = assignedChoices.slice(1).concat(rejectedChoices);
     sortBySize(restChoices);
 
@@ -567,45 +586,24 @@ export const _suggestionsAndChoicesForPerson = async (
 };
 
 /**
- * Return a random sample of {@link n} elements from the given {@link items}.
- *
- * Functionally this is equivalent to `shuffled(items).slice(0, n)`, except it
- * tries to be a bit faster for long arrays when we need only a small sample
- * from it. In a few tests, this indeed makes a substantial difference.
- */
-const randomSample = <T>(items: T[], n: number) => {
-    if (items.length <= n) return items;
-    if (n == 0) return [];
-
-    if (n > items.length / 3) {
-        // Avoid using the random sampling without replacement method if a
-        // significant proportion of the original items are needed, otherwise we
-        // might run into long retry loop at the tail end (hitting the same
-        // indexes again an again).
-        return shuffled(items).slice(0, n);
-    }
-
-    const ix = new Set<number>();
-    while (ix.size < n) {
-        ix.add(Math.floor(Math.random() * items.length));
-    }
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    return [...ix].map((i) => items[i]!);
-};
-
-/**
  * A map specifying the changes to make when the user presses the save button on
  * the people suggestions dialog.
  *
- * Each entry is a (clusterID, assigned) pair.
+ * Each entry is a (clusterID, update) pair.
  *
- * * Entries with assigned `true` should be assigned to the cgroup,
- * * Entries with assigned `false` should be rejected from the cgroup.
- * * Entries with assigned `undefined` should be reset - i.e. they should be
- *   removed from both the assigned and rejected choices associated with the
- *   cgroup (if needed).
+ * * Clusters with "assign" should be assigned to the cgroup,
+ * * Clusters with "rejectSuggestion" should be rejected from the cgroup
+ *   locally. These correspond to suggestions which the user did not accept.
+ * * Clusters with "rejectSavedChoice" should be rejected from the cgroup both
+ *   locally and on remote. These correspond to saved choices which the user
+ *   went on to explicitly reject.
+ * * Clusters with "reset" should be reset - i.e. should be removed from both
+ *   the assigned and rejected choices associated with the cgroup (if needed).
  */
-export type PersonSuggestionUpdates = Map<string, boolean | undefined>;
+export type PersonSuggestionUpdates = Map<
+    string,
+    "assign" | "rejectSuggestion" | "rejectSavedChoice" | "reset"
+>;
 
 /**
  * Implementation for the "save" action on the SuggestionsDialog.
@@ -617,26 +615,30 @@ export type PersonSuggestionUpdates = Map<string, boolean | undefined>;
  *
  * @param updates The changes to make. See {@link PersonSuggestionUpdates}.
  *
- * @param masterKey The user's masterKey, which is is used to encrypt and
- * decrypt the entity key associated with cgroups.
+ * @param masterKey The user's masterKey (as a base64 string), which is is used
+ * to encrypt and decrypt the entity key associated with cgroups.
  */
 export const _applyPersonSuggestionUpdates = async (
     cgroup: CGroup,
     updates: PersonSuggestionUpdates,
-    masterKey: Uint8Array,
+    masterKey: string,
 ) => {
     const localClusters = await savedFaceClusters();
 
     let assignedClusters = [...cgroup.data.assigned];
     let rejectedClusterIDs = await savedRejectedClustersForCGroup(cgroup.id);
+    let newlyRejectedFaceIDs: string[] = [];
 
     let assignUpdateCount = 0;
     let rejectUpdateCount = 0;
 
+    const clusterWithID = (clusterID: string) =>
+        localClusters.find((c) => c.id == clusterID)!;
+
     // Add cluster with `clusterID` to the list of assigned clusters.
     const assign = (clusterID: string) => {
-        const cluster = localClusters.find((c) => c.id == clusterID);
-        assignedClusters.push(ensure(cluster));
+        const cluster = clusterWithID(clusterID);
+        assignedClusters.push(cluster);
         assignUpdateCount += 1;
     };
 
@@ -661,14 +663,20 @@ export const _applyPersonSuggestionUpdates = async (
             // part of the remote data. Since we're removing it from the remote
             // state, add it to the local state instead so that the user can see
             // it in their saved choices (local only).
-            localClusters.push(ensure(cluster));
+            localClusters.push(cluster!);
         }
     };
 
-    // Add `clusterID` to the list of rejected clusters.
-    const reject = (clusterID: string) => {
+    // Add `clusterID` to the list of rejected clusters locally.
+    const rejectClusterLocal = (clusterID: string) => {
         rejectedClusterIDs.push(clusterID);
         rejectUpdateCount += 1;
+    };
+
+    // Mark the faces in `clusterID` as rejected on remote.
+    const rejectFacesRemote = (clusterID: string) => {
+        const cluster = clusterWithID(clusterID);
+        newlyRejectedFaceIDs = newlyRejectedFaceIDs.concat(cluster.faces);
     };
 
     // Remove `clusterID` from the list of rejected clusters (if needed).
@@ -683,28 +691,41 @@ export const _applyPersonSuggestionUpdates = async (
 
     for (const [clusterID, assigned] of updates.entries()) {
         switch (assigned) {
-            case true /* assign */:
+            case "assign":
                 assign(clusterID);
                 unrejectIfNeeded(clusterID);
                 break;
 
-            case false /* reject */:
+            case "rejectSuggestion":
                 unassignIfNeeded(clusterID);
-                reject(clusterID);
+                rejectClusterLocal(clusterID);
                 break;
 
-            case undefined /* reset */:
+            case "rejectSavedChoice":
+                unassignIfNeeded(clusterID);
+                rejectClusterLocal(clusterID);
+                rejectFacesRemote(clusterID);
+                break;
+
+            case "reset":
                 unassignIfNeeded(clusterID);
                 unrejectIfNeeded(clusterID);
                 break;
         }
     }
 
-    if (assignUpdateCount > 0) {
+    if (assignUpdateCount > 0 || newlyRejectedFaceIDs.length > 0) {
         const assigned = assignedClusters;
+        const rejectedFaceIDs =
+            cgroup.data.rejectedFaceIDs.concat(newlyRejectedFaceIDs);
         await updateOrCreateUserEntities(
             "cgroup",
-            [{ ...cgroup, data: { ...cgroup.data, assigned } }],
+            [
+                {
+                    ...cgroup,
+                    data: { ...cgroup.data, assigned, rejectedFaceIDs },
+                },
+            ],
             masterKey,
         );
         await saveFaceClusters(localClusters);

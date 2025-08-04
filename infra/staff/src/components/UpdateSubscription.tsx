@@ -22,6 +22,10 @@ interface Subscription {
     originalTransactionID: string;
     expiryTime: number;
     userID: string;
+    attributes: {
+        customerID: string;
+        stripeAccountCountry: string;
+    };
 }
 
 interface UserDataResponse {
@@ -40,6 +44,10 @@ interface FormValues {
     transactionId: string;
     expiryTime: string | Date | null;
     userId: string;
+    attributes: {
+        customerID: string;
+        stripeAccountCountry: string;
+    };
 }
 
 const UpdateSubscription: React.FC<UpdateSubscriptionProps> = ({
@@ -53,6 +61,10 @@ const UpdateSubscription: React.FC<UpdateSubscriptionProps> = ({
         transactionId: "",
         expiryTime: "",
         userId: "",
+        attributes: {
+            customerID: "",
+            stripeAccountCountry: "",
+        },
     });
 
     const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
@@ -63,10 +75,12 @@ const UpdateSubscription: React.FC<UpdateSubscriptionProps> = ({
                 const email = getEmail();
                 const token = getToken();
                 const encodedEmail = encodeURIComponent(email);
-                const encodedToken = encodeURIComponent(token);
-                const url = `${apiOrigin}/admin/user?email=${encodedEmail}&token=${encodedToken}`;
-
-                const response = await fetch(url);
+                const url = `${apiOrigin}/admin/user?email=${encodedEmail}`;
+                const response = await fetch(url, {
+                    headers: {
+                        "X-AUTH-TOKEN": token,
+                    },
+                });
                 if (!response.ok) {
                     throw new Error("Network response was not ok");
                 }
@@ -93,6 +107,14 @@ const UpdateSubscription: React.FC<UpdateSubscriptionProps> = ({
                         "",
                     expiryTime: expiryTime,
                     userId: userDataResponse.subscription.userID || "",
+                    attributes: {
+                        customerID:
+                            userDataResponse.subscription.attributes
+                                .customerID || "",
+                        stripeAccountCountry:
+                            userDataResponse.subscription.attributes
+                                .stripeAccountCountry || "",
+                    },
                 });
             } catch (error) {
                 console.error("Error fetching data:", error);
@@ -154,6 +176,11 @@ const UpdateSubscription: React.FC<UpdateSubscriptionProps> = ({
                 productId: values.productId,
                 paymentProvider: values.provider,
                 transactionId: values.transactionId,
+                attributes: {
+                    customerID: values.attributes.customerID,
+                    stripeAccountCountry:
+                        values.attributes.stripeAccountCountry,
+                },
             };
 
             try {
@@ -172,7 +199,11 @@ const UpdateSubscription: React.FC<UpdateSubscriptionProps> = ({
                 console.log("Subscription updated successfully");
                 onClose();
             } catch (error) {
-                console.error("Error updating subscription:", error);
+                if (error instanceof Error) {
+                    alert(`Failed to update subscription: ${error.message}`);
+                } else {
+                    alert("Failed to update subscription");
+                }
             }
         })().catch((error: unknown) => {
             console.error("Unhandled promise rejection:", error);

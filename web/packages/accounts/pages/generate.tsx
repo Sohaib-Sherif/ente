@@ -1,130 +1,127 @@
-import { putAttributes } from "@/accounts/api/user";
-import { RecoveryKey } from "@/accounts/components/RecoveryKey";
-import SetPasswordForm, {
-    type SetPasswordFormProps,
-} from "@/accounts/components/SetPasswordForm";
-import { PAGES } from "@/accounts/constants/pages";
-import { configureSRP } from "@/accounts/services/srp";
-import { generateKeyAndSRPAttributes } from "@/accounts/utils/srp";
-import { ActivityIndicator } from "@/base/components/mui/ActivityIndicator";
-import log from "@/base/log";
-import { ensure } from "@/utils/ensure";
-import { VerticallyCentered } from "@ente/shared/components/Container";
-import FormPaper from "@ente/shared/components/Form/FormPaper";
-import FormPaperFooter from "@ente/shared/components/Form/FormPaper/Footer";
-import FormTitle from "@ente/shared/components/Form/FormPaper/Title";
-import LinkButton from "@ente/shared/components/LinkButton";
+import { Divider } from "@mui/material";
 import {
-    generateAndSaveIntermediateKeyAttributes,
-    saveKeyInSessionStore,
-} from "@ente/shared/crypto/helpers";
-import { LS_KEYS, getData } from "@ente/shared/storage/localStorage";
+    AccountsPageContents,
+    AccountsPageFooter,
+    AccountsPageTitle,
+} from "ente-accounts/components/layouts/centered-paper";
+import { RecoveryKey } from "ente-accounts/components/RecoveryKey";
 import {
-    justSignedUp,
-    setJustSignedUp,
-} from "@ente/shared/storage/localStorage/helpers";
-import { SESSION_KEYS, getKey } from "@ente/shared/storage/sessionStorage";
-import type { KeyAttributes, User } from "@ente/shared/user/types";
+    savedJustSignedUp,
+    savedOriginalKeyAttributes,
+    savedPartialLocalUser,
+    saveJustSignedUp,
+} from "ente-accounts/services/accounts-db";
+import { appHomeRoute } from "ente-accounts/services/redirect";
+import {
+    generateSRPSetupAttributes,
+    getAndSaveSRPAttributes,
+    setupSRP,
+} from "ente-accounts/services/srp";
+import {
+    generateAndSaveInteractiveKeyAttributes,
+    generateKeysAndAttributes,
+    putUserKeyAttributes,
+} from "ente-accounts/services/user";
+import { LinkButton } from "ente-base/components/LinkButton";
+import { LoadingIndicator } from "ente-base/components/loaders";
+import { useBaseContext } from "ente-base/context";
+import { deriveKeyInsufficientMemoryErrorMessage } from "ente-base/crypto/types";
+import log from "ente-base/log";
+import {
+    haveMasterKeyInSession,
+    saveMasterKeyInSessionAndSafeStore,
+} from "ente-base/session";
 import { t } from "i18next";
 import { useRouter } from "next/router";
-import { useEffect, useState } from "react";
-import { appHomeRoute } from "../services/redirect";
-import type { PageProps } from "../types/page";
+import { useCallback, useEffect, useState } from "react";
+import {
+    NewPasswordForm,
+    type NewPasswordFormProps,
+} from "../components/NewPasswordForm";
 
-const Page: React.FC<PageProps> = ({ appContext }) => {
-    const { logout, showMiniDialog } = appContext;
+/**
+ * A page that allows the user to generate key attributes if needed, and shows
+ * them their recovery key if they just signed up.
+ *
+ * See: [Note: Login pages]
+ */
+const Page: React.FC = () => {
+    const { logout, showMiniDialog } = useBaseContext();
 
-    const [token, setToken] = useState<string>();
-    const [user, setUser] = useState<User>();
+    const [userEmail, setUserEmail] = useState("");
     const [openRecoveryKey, setOpenRecoveryKey] = useState(false);
-    const [loading, setLoading] = useState(true);
 
     const router = useRouter();
 
     useEffect(() => {
-        const main = async () => {
-            const key: string = getKey(SESSION_KEYS.ENCRYPTION_KEY);
-            const keyAttributes: KeyAttributes = getData(
-                LS_KEYS.ORIGINAL_KEY_ATTRIBUTES,
-            );
-            const user: User = getData(LS_KEYS.USER);
-            setUser(user);
-            if (!user?.token) {
-                router.push("/");
-            } else if (key) {
-                if (justSignedUp()) {
-                    setOpenRecoveryKey(true);
-                    setLoading(false);
-                } else {
-                    router.push(appHomeRoute);
-                }
-            } else if (keyAttributes?.encryptedKey) {
-                router.push(PAGES.CREDENTIALS);
+        const user = savedPartialLocalUser();
+        if (!user?.email || !user.token) {
+            void router.replace("/");
+        } else if (haveMasterKeyInSession()) {
+            if (savedJustSignedUp()) {
+                setOpenRecoveryKey(true);
             } else {
-                setToken(user.token);
-                setLoading(false);
+                void router.replace(appHomeRoute);
             }
-        };
-        main();
-        appContext.showNavBar(true);
-    }, []);
-
-    const onSubmit: SetPasswordFormProps["callback"] = async (
-        passphrase,
-        setFieldError,
-    ) => {
-        try {
-            const { keyAttributes, masterKey, srpSetupAttributes } =
-                await generateKeyAndSRPAttributes(passphrase);
-
-            // TODO: Refactor the code to not require this ensure
-            await putAttributes(ensure(token), keyAttributes);
-            await configureSRP(srpSetupAttributes);
-            await generateAndSaveIntermediateKeyAttributes(
-                passphrase,
-                keyAttributes,
-                masterKey,
-            );
-            await saveKeyInSessionStore(SESSION_KEYS.ENCRYPTION_KEY, masterKey);
-            setJustSignedUp(true);
-            setOpenRecoveryKey(true);
-        } catch (e) {
-            log.error("failed to generate password", e);
-            setFieldError("passphrase", t("PASSWORD_GENERATION_FAILED"));
+        } else if (savedOriginalKeyAttributes()) {
+            void router.replace("/credentials");
+        } else {
+            setUserEmail(user.email);
         }
-    };
+    }, [router]);
+
+    const handleSubmit: NewPasswordFormProps["onSubmit"] = useCallback(
+        async (password, setPasswordsFieldError) => {
+            try {
+                const { masterKey, kek, keyAttributes } =
+                    await generateKeysAndAttributes(password);
+                await putUserKeyAttributes(keyAttributes);
+                await setupSRP(await generateSRPSetupAttributes(kek));
+                await getAndSaveSRPAttributes(userEmail);
+                await generateAndSaveInteractiveKeyAttributes(
+                    password,
+                    keyAttributes,
+                    masterKey,
+                );
+                await saveMasterKeyInSessionAndSafeStore(masterKey);
+                saveJustSignedUp();
+                setOpenRecoveryKey(true);
+            } catch (e) {
+                log.error("Could not generate key attributes from password", e);
+                setPasswordsFieldError(
+                    e instanceof Error &&
+                        e.message == deriveKeyInsufficientMemoryErrorMessage
+                        ? t("password_generation_failed")
+                        : t("generic_error"),
+                );
+            }
+        },
+        [userEmail],
+    );
 
     return (
         <>
-            {loading || !user ? (
-                <VerticallyCentered>
-                    <ActivityIndicator />
-                </VerticallyCentered>
-            ) : openRecoveryKey ? (
+            {openRecoveryKey ? (
                 <RecoveryKey
                     open={openRecoveryKey}
-                    onClose={() => {
-                        setOpenRecoveryKey(false);
-                        router.push(appHomeRoute);
-                    }}
+                    onClose={() => void router.push(appHomeRoute)}
                     showMiniDialog={showMiniDialog}
                 />
+            ) : userEmail ? (
+                <AccountsPageContents>
+                    <AccountsPageTitle>{t("set_password")}</AccountsPageTitle>
+                    <NewPasswordForm
+                        userEmail={userEmail}
+                        submitButtonTitle={t("set_password")}
+                        onSubmit={handleSubmit}
+                    />
+                    <Divider sx={{ mt: 1 }} />
+                    <AccountsPageFooter>
+                        <LinkButton onClick={logout}>{t("go_back")}</LinkButton>
+                    </AccountsPageFooter>
+                </AccountsPageContents>
             ) : (
-                <VerticallyCentered>
-                    <FormPaper>
-                        <FormTitle>{t("SET_PASSPHRASE")}</FormTitle>
-                        <SetPasswordForm
-                            userEmail={user.email}
-                            callback={onSubmit}
-                            buttonText={t("SET_PASSPHRASE")}
-                        />
-                        <FormPaperFooter>
-                            <LinkButton onClick={logout}>
-                                {t("GO_BACK")}
-                            </LinkButton>
-                        </FormPaperFooter>
-                    </FormPaper>
-                </VerticallyCentered>
+                <LoadingIndicator />
             )}
         </>
     );

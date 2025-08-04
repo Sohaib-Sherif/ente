@@ -1,129 +1,109 @@
-import { clientPackageName, staticAppTitle } from "@/base/app";
-import { CustomHead } from "@/base/components/Head";
-import { AttributedMiniDialog } from "@/base/components/MiniDialog";
-import { ActivityIndicator } from "@/base/components/mui/ActivityIndicator";
-import { AppNavbar } from "@/base/components/Navbar";
+import "@fontsource-variable/inter";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
+import { CssBaseline, Typography } from "@mui/material";
+import { styled, ThemeProvider } from "@mui/material/styles";
+import { useNotification } from "components/utils/hooks-app";
 import {
-    genericErrorDialogAttributes,
-    useAttributedMiniDialog,
-} from "@/base/components/utils/dialog";
-import { setupI18n } from "@/base/i18n";
-import log from "@/base/log";
+    isLocalStorageAndIndexedDBMismatch,
+    savedLocalUser,
+    savedPartialLocalUser,
+} from "ente-accounts/services/accounts-db";
+import { isDesktop, staticAppTitle } from "ente-base/app";
+import { CenteredRow } from "ente-base/components/containers";
+import { CustomHeadPhotosOrAlbums } from "ente-base/components/Head";
 import {
-    logStartupBanner,
-    logUnhandledErrorsAndRejections,
-} from "@/base/log-web";
-import { AppUpdate } from "@/base/types/ipc";
+    LoadingIndicator,
+    TranslucentLoadingOverlay,
+} from "ente-base/components/loaders";
+import { AttributedMiniDialog } from "ente-base/components/MiniDialog";
+import { useAttributedMiniDialog } from "ente-base/components/utils/dialog";
+import {
+    useIsRouteChangeInProgress,
+    useSetupI18n,
+    useSetupLogs,
+} from "ente-base/components/utils/hooks-app";
+import { photosTheme } from "ente-base/components/utils/theme";
+import { BaseContext, deriveBaseContext } from "ente-base/context";
+import log from "ente-base/log";
+import { logStartupBanner } from "ente-base/log-web";
+import type { AppUpdate } from "ente-base/types/ipc";
+import {
+    initVideoProcessing,
+    isHLSGenerationSupported,
+} from "ente-gallery/services/video";
+import { Notification } from "ente-new/photos/components/Notification";
+import { ThemedLoadingBar } from "ente-new/photos/components/ThemedLoadingBar";
 import {
     updateAvailableForDownloadDialogAttributes,
     updateReadyToInstallDialogAttributes,
-} from "@/new/photos/components/utils/download";
-import { photosDialogZIndex } from "@/new/photos/components/utils/z-index";
-import DownloadManager from "@/new/photos/services/download";
-import { runMigrations } from "@/new/photos/services/migrations";
-import { initML, isMLSupported } from "@/new/photos/services/ml";
-import { AppContext } from "@/new/photos/types/context";
-import { Overlay } from "@ente/shared/components/Container";
-import DialogBox from "@ente/shared/components/DialogBox";
-import { DialogBoxAttributes } from "@ente/shared/components/DialogBox/types";
-import { MessageContainer } from "@ente/shared/components/MessageContainer";
-import { useLocalState } from "@ente/shared/hooks/useLocalState";
-import HTTPService from "@ente/shared/network/HTTPService";
-import {
-    LS_KEYS,
-    getData,
-    migrateKVToken,
-} from "@ente/shared/storage/localStorage";
-import {
-    getLocalMapEnabled,
-    getToken,
-    setLocalMapEnabled,
-} from "@ente/shared/storage/localStorage/helpers";
-import { getTheme } from "@ente/shared/themes";
-import { THEME_COLOR } from "@ente/shared/themes/constants";
-import type { User } from "@ente/shared/user/types";
-import ArrowForward from "@mui/icons-material/ArrowForward";
-import { CssBaseline } from "@mui/material";
-import { ThemeProvider } from "@mui/material/styles";
-import Notification from "components/Notification";
+} from "ente-new/photos/components/utils/download";
+import { useLoadingBar } from "ente-new/photos/components/utils/use-loading-bar";
+import { resumeExportsIfNeeded } from "ente-new/photos/services/export";
+import { runMigrations } from "ente-new/photos/services/migration";
+import { initML, isMLSupported } from "ente-new/photos/services/ml";
+import { getFamilyPortalRedirectURL } from "ente-new/photos/services/user-details";
+import { PhotosAppContext } from "ente-new/photos/types/context";
 import { t } from "i18next";
-import isElectron from "is-electron";
 import type { AppProps } from "next/app";
 import { useRouter } from "next/router";
-import "photoswipe/dist/photoswipe.css";
-import { useCallback, useEffect, useRef, useState } from "react";
-import LoadingBar from "react-top-loading-bar";
-import { resumeExportsIfNeeded } from "services/export";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { photosLogout } from "services/logout";
-import {
-    getFamilyPortalRedirectURL,
-    updateMapEnabledStatus,
-} from "services/userService";
+
+import "photoswipe/dist/photoswipe.css";
 import "styles/global.css";
-import { NotificationAttributes } from "types/Notification";
+import "styles/photoswipe.css";
 
-export default function App({ Component, pageProps }: AppProps) {
+const App: React.FC<AppProps> = ({ Component, pageProps }) => {
+    useSetupLogs();
+
+    const isI18nReady = useSetupI18n();
+    const isChangingRoute = useIsRouteChangeInProgress();
     const router = useRouter();
-    const [isI18nReady, setIsI18nReady] = useState<boolean>(false);
-    const [loading, setLoading] = useState(false);
-    const [offline, setOffline] = useState(
-        typeof window !== "undefined" && !window.navigator.onLine,
-    );
-    const [showNavbar, setShowNavBar] = useState(false);
-    const [mapEnabled, setMapEnabled] = useState(false);
-    const isLoadingBarRunning = useRef(false);
-    const loadingBar = useRef(null);
-    const [dialogMessage, setDialogMessage] = useState<DialogBoxAttributes>();
-    const [messageDialogView, setMessageDialogView] = useState(false);
-    const [watchFolderView, setWatchFolderView] = useState(false);
-    const [watchFolderFiles, setWatchFolderFiles] = useState<FileList>(null);
-    const [notificationView, setNotificationView] = useState(false);
-    const closeNotification = () => setNotificationView(false);
-    const [notificationAttributes, setNotificationAttributes] =
-        useState<NotificationAttributes>(null);
-
     const { showMiniDialog, miniDialogProps } = useAttributedMiniDialog();
-    const [themeColor, setThemeColor] = useLocalState(
-        LS_KEYS.THEME,
-        THEME_COLOR.DARK,
-    );
-    const [isCFProxyDisabled, setIsCFProxyDisabled] = useLocalState(
-        LS_KEYS.CF_PROXY_DISABLED,
-        false,
-    );
+    const { showNotification, notificationProps } = useNotification();
+    const { loadingBarRef, showLoadingBar, hideLoadingBar } = useLoadingBar();
+
+    const [watchFolderView, setWatchFolderView] = useState(false);
+
+    const logout = useCallback(() => void photosLogout(), []);
 
     useEffect(() => {
-        void setupI18n().finally(() => setIsI18nReady(true));
-        const user = getData(LS_KEYS.USER) as User | undefined | null;
-        migrateKVToken(user);
-        logStartupBanner(user?.id);
-        HTTPService.setHeaders({ "X-Client-Package": clientPackageName });
-        logUnhandledErrorsAndRejections(true);
-        void runMigrations();
-        return () => logUnhandledErrorsAndRejections(false);
-    }, []);
+        logStartupBanner(savedLocalUser()?.id);
+        void isLocalStorageAndIndexedDBMismatch().then((mismatch) => {
+            if (mismatch) {
+                log.error("Logging out (IndexedDB and local storage mismatch)");
+                logout();
+                return;
+            } else {
+                return runMigrations();
+            }
+        });
+    }, [logout]);
 
     useEffect(() => {
         const electron = globalThis.electron;
-        if (!electron) return;
+        if (!electron) return undefined;
 
         // Attach various listeners for events sent to us by the Node.js layer.
         // This is for events that we should listen for always, not just when
         // the user is logged in.
 
-        const handleOpenURL = (url: string) => {
-            if (url.startsWith("ente://app")) router.push(url);
-            else log.info(`Ignoring unhandled open request for URL ${url}`);
+        const handleOpenEnteURL = (url: string) => {
+            if (url.startsWith("ente://app")) {
+                void router.push(url);
+            } else {
+                log.info(`Ignoring unhandled open request for URL ${url}`);
+            }
         };
 
         const showUpdateDialog = (update: AppUpdate) => {
             if (update.autoUpdatable) {
                 showMiniDialog(updateReadyToInstallDialogAttributes(update));
             } else {
-                setNotificationAttributes({
-                    endIcon: <ArrowForward />,
-                    variant: "secondary",
-                    message: t("update_available"),
+                showNotification({
+                    color: "secondary",
+                    title: t("update_available"),
+                    endIcon: <ArrowForwardIcon />,
                     onClick: () =>
                         showMiniDialog(
                             updateAvailableForDownloadDialogAttributes(update),
@@ -133,195 +113,119 @@ export default function App({ Component, pageProps }: AppProps) {
         };
 
         if (isMLSupported) initML();
+        if (isHLSGenerationSupported) void initVideoProcessing();
 
-        electron.onOpenURL(handleOpenURL);
+        electron.onOpenEnteURL(handleOpenEnteURL);
         electron.onAppUpdateAvailable(showUpdateDialog);
 
         return () => {
-            electron.onOpenURL(undefined);
+            electron.onOpenEnteURL(undefined);
             electron.onAppUpdateAvailable(undefined);
         };
-    }, []);
+    }, [router, showMiniDialog, showNotification]);
 
     useEffect(() => {
-        setMapEnabled(getLocalMapEnabled());
+        if (isDesktop) void resumeExportsIfNeeded();
     }, []);
-
-    useEffect(() => {
-        if (!isElectron()) {
-            return;
-        }
-        const initExport = async () => {
-            const token = getToken();
-            if (!token) return;
-            await DownloadManager.init(token);
-            await resumeExportsIfNeeded();
-        };
-        initExport();
-    }, []);
-
-    const setUserOnline = () => setOffline(false);
-    const setUserOffline = () => setOffline(true);
 
     useEffect(() => {
         const query = new URLSearchParams(window.location.search);
         const needsFamilyRedirect = query.get("redirect") == "families";
-        if (needsFamilyRedirect && getData(LS_KEYS.USER)?.token)
+        if (needsFamilyRedirect && savedPartialLocalUser()?.token)
             redirectToFamilyPortal();
 
-        router.events.on("routeChangeStart", (url: string) => {
-            const newPathname = url.split("?")[0];
-            if (window.location.pathname !== newPathname) {
-                setLoading(true);
+        // Creating this inline, we need this on debug only and temporarily. Can
+        // remove the debug print itself after a while.
+        interface NROptions {
+            shallow: boolean;
+        }
+        router.events.on("routeChangeStart", (url: string, o: NROptions) => {
+            if (process.env.NEXT_PUBLIC_ENTE_TRACE_RT) {
+                log.debug(() => [o.shallow ? "route-shallow" : "route", url]);
             }
 
-            if (needsFamilyRedirect && getData(LS_KEYS.USER)?.token) {
+            if (needsFamilyRedirect && savedPartialLocalUser()?.token) {
                 redirectToFamilyPortal();
 
                 // https://github.com/vercel/next.js/issues/2476#issuecomment-573460710
-                // eslint-disable-next-line no-throw-literal
+                // eslint-disable-next-line @typescript-eslint/only-throw-error
                 throw "Aborting route change, redirection in process....";
             }
         });
-
-        router.events.on("routeChangeComplete", () => {
-            setLoading(false);
-        });
-
-        window.addEventListener("online", setUserOnline);
-        window.addEventListener("offline", setUserOffline);
-
-        return () => {
-            window.removeEventListener("online", setUserOnline);
-            window.removeEventListener("offline", setUserOffline);
-        };
+        // TODO:
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    useEffect(() => {
-        setMessageDialogView(true);
-    }, [dialogMessage]);
-
-    useEffect(() => {
-        setNotificationView(true);
-    }, [notificationAttributes]);
-
-    const showNavBar = (show: boolean) => setShowNavBar(show);
-
-    const updateMapEnabled = async (enabled: boolean) => {
-        await updateMapEnabledStatus(enabled);
-        setLocalMapEnabled(enabled);
-        setMapEnabled(enabled);
-    };
-
-    const startLoading = () => {
-        !isLoadingBarRunning.current && loadingBar.current?.continuousStart();
-        isLoadingBarRunning.current = true;
-    };
-    const finishLoading = () => {
-        setTimeout(() => {
-            isLoadingBarRunning.current && loadingBar.current?.complete();
-            isLoadingBarRunning.current = false;
-        }, 100);
-    };
-
-    // Use `onGenericError` instead.
-    const somethingWentWrong = useCallback(
-        () =>
-            setDialogMessage({
-                title: t("error"),
-                close: { variant: "critical" },
-                content: t("generic_error_retry"),
-            }),
-        [],
+    const baseContext = useMemo(
+        () => deriveBaseContext({ logout, showMiniDialog }),
+        [logout, showMiniDialog],
     );
-
-    const onGenericError = useCallback((e: unknown) => {
-        log.error("Error", e);
-        showMiniDialog(genericErrorDialogAttributes());
-    }, []);
-
-    const logout = useCallback(() => {
-        void photosLogout().then(() => router.push("/"));
-    }, [router]);
-
-    const appContext = {
-        showNavBar,
-        startLoading, // <- changes on each render (TODO Fix)
-        finishLoading, // <- changes on each render
-        setDialogMessage,
-        watchFolderView,
-        setWatchFolderView,
-        watchFolderFiles,
-        setWatchFolderFiles,
-        setNotificationAttributes,
-        themeColor,
-        setThemeColor,
-        showMiniDialog,
-        somethingWentWrong,
-        onGenericError,
-        mapEnabled,
-        updateMapEnabled, // <- changes on each render
-        isCFProxyDisabled,
-        setIsCFProxyDisabled,
-        logout,
-    };
+    const appContext = useMemo(
+        () => ({
+            showLoadingBar,
+            hideLoadingBar,
+            watchFolderView,
+            setWatchFolderView,
+            showNotification,
+        }),
+        [
+            showLoadingBar,
+            hideLoadingBar,
+            watchFolderView,
+            setWatchFolderView,
+            showNotification,
+        ],
+    );
 
     const title = isI18nReady ? t("title_photos") : staticAppTitle;
 
     return (
-        <>
-            <CustomHead {...{ title }} />
+        <ThemeProvider theme={photosTheme}>
+            <CustomHeadPhotosOrAlbums {...{ title }} />
+            <CssBaseline enableColorScheme />
 
-            <ThemeProvider theme={getTheme(themeColor, "photos")}>
-                <CssBaseline enableColorScheme />
-                {showNavbar && <AppNavbar />}
-                <MessageContainer>
-                    {isI18nReady && offline && t("OFFLINE_MSG")}
-                </MessageContainer>
-                <LoadingBar color="#51cd7c" ref={loadingBar} />
+            <ThemedLoadingBar ref={loadingBarRef} />
+            <AttributedMiniDialog {...miniDialogProps} />
+            <Notification {...notificationProps} />
 
-                <DialogBox
-                    sx={{ zIndex: photosDialogZIndex }}
-                    size="xs"
-                    open={messageDialogView}
-                    onClose={() => setMessageDialogView(false)}
-                    attributes={dialogMessage}
-                />
-                <AttributedMiniDialog
-                    sx={{ zIndex: photosDialogZIndex }}
-                    {...miniDialogProps}
-                />
-
-                <Notification
-                    open={notificationView}
-                    onClose={closeNotification}
-                    attributes={notificationAttributes}
-                />
-
-                <AppContext.Provider value={appContext}>
-                    {(loading || !isI18nReady) && (
-                        <Overlay
-                            sx={(theme) => ({
-                                display: "flex",
-                                justifyContent: "center",
-                                alignItems: "center",
-                                zIndex: 2000,
-                                backgroundColor: theme.colors.background.base,
-                            })}
-                        >
-                            <ActivityIndicator />
-                        </Overlay>
+            {isDesktop && <WindowTitlebar>{title}</WindowTitlebar>}
+            <BaseContext value={baseContext}>
+                <PhotosAppContext value={appContext}>
+                    {!isI18nReady ? (
+                        <LoadingIndicator />
+                    ) : (
+                        <>
+                            {isChangingRoute && <TranslucentLoadingOverlay />}
+                            <Component {...pageProps} />
+                        </>
                     )}
-                    {isI18nReady && (
-                        <Component setLoading={setLoading} {...pageProps} />
-                    )}
-                </AppContext.Provider>
-            </ThemeProvider>
-        </>
+                </PhotosAppContext>
+            </BaseContext>
+        </ThemeProvider>
     );
-}
+};
+
+export default App;
 
 const redirectToFamilyPortal = () =>
     void getFamilyPortalRedirectURL().then((url) => {
         window.location.href = url;
     });
+
+const WindowTitlebar: React.FC<React.PropsWithChildren> = ({ children }) => (
+    <WindowTitlebarArea>
+        <Typography variant="small" sx={{ mt: "2px", fontWeight: "bold" }}>
+            {children}
+        </Typography>
+    </WindowTitlebarArea>
+);
+
+// See: [Note: Customize the desktop title bar]
+const WindowTitlebarArea = styled(CenteredRow)`
+    width: 100%;
+    height: env(titlebar-area-height, 30px /* fallback */);
+    /* LoadingIndicator is 100vh, so resist shrinking when shown with it. */
+    flex-shrink: 0;
+    /* Allow using the titlebar to drag the window. */
+    app-region: drag;
+`;

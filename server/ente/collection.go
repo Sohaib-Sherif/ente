@@ -38,7 +38,7 @@ func (c *Collection) AllowSharing() bool {
 	if c == nil {
 		return false
 	}
-	if c.Type == "favorites" || c.Type == "uncategorized" {
+	if c.Type == "uncategorized" {
 		return false
 	}
 	return true
@@ -95,6 +95,11 @@ type AlterShareRequest struct {
 	Email        string                     `json:"email" binding:"required"`
 	EncryptedKey string                     `json:"encryptedKey"`
 	Role         *CollectionParticipantRole `json:"role"`
+}
+
+type JoinCollectionViaLinkRequest struct {
+	CollectionID int64  `json:"collectionID" binding:"required"`
+	EncryptedKey string `json:"encryptedKey" binding:"required"`
 }
 
 // AddFilesRequest represents a request to add files to a collection

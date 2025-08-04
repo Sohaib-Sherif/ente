@@ -24,6 +24,12 @@ var ErrIncorrectTOTP = errors.New("incorrect TOTP")
 // ErrNotFound is returned when the requested resource was not found
 var ErrNotFound = errors.New("not found")
 
+var ErrCollectionDeleted = &ApiError{
+	Code:           "COLLECTION_DELETED",
+	Message:        "",
+	HttpStatusCode: http.StatusNotFound,
+}
+
 var ErrFileLimitReached = errors.New("file limit reached")
 
 // ErrBadRequest is returned when a bad request is encountered
@@ -111,6 +117,18 @@ var ErrSubscriptionAlreadyClaimed = ApiError{
 	Message:        "Subscription is already associted with different account",
 }
 
+var ErrUserAlreadyRegistered = &ApiError{
+	Code:           "USER_ALREADY_REGISTERED",
+	HttpStatusCode: http.StatusConflict,
+	Message:        "User is already registered",
+}
+
+var ErrUserNotRegistered = &ApiError{
+	Code:           "USER_NOT_REGISTERED",
+	HttpStatusCode: http.StatusNotFound,
+	Message:        "User is not registered",
+}
+
 var ErrCollectionNotEmpty = ApiError{
 	Code:           CollectionNotEmpty,
 	HttpStatusCode: http.StatusConflict,
@@ -139,6 +157,12 @@ var ErrNotFoundError = ApiError{
 	Code:           NotFoundError,
 	Message:        "",
 	HttpStatusCode: http.StatusNotFound,
+}
+
+var ErrObjSizeFetchFailed = &ApiError{
+	Code:           "OBJECT_SIZE_FETCH_FAILED",
+	Message:        "",
+	HttpStatusCode: http.StatusServiceUnavailable,
 }
 
 var ErrUserNotFound = &ApiError{
@@ -251,6 +275,14 @@ func NewBadRequestWithMessage(message string) *ApiError {
 	return &ApiError{
 		Code:           BadRequest,
 		HttpStatusCode: http.StatusBadRequest,
+		Message:        message,
+	}
+}
+
+func NewPermissionDeniedError(message string) *ApiError {
+	return &ApiError{
+		Code:           "PERMISSION_DENIED",
+		HttpStatusCode: http.StatusForbidden,
 		Message:        message,
 	}
 }

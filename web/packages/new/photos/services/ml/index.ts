@@ -2,21 +2,21 @@
  * @file Main thread interface to the ML subsystem.
  */
 
-import { isDesktop } from "@/base/app";
-import { blobCache } from "@/base/blob-cache";
-import { ensureElectron } from "@/base/electron";
-import log from "@/base/log";
-import { masterKeyFromSession } from "@/base/session-store";
-import type { Electron } from "@/base/types/ipc";
-import { ComlinkWorker } from "@/base/worker/comlink-worker";
-import type { EnteFile } from "@/media/file";
-import { FileType } from "@/media/file-type";
-import { ensure } from "@/utils/ensure";
-import { throttled } from "@/utils/promise";
 import { proxy, transfer } from "comlink";
+import { isDesktop } from "ente-base/app";
+import { blobCache } from "ente-base/blob-cache";
+import { ensureElectron } from "ente-base/electron";
+import log from "ente-base/log";
+import { ensureMasterKeyFromSession } from "ente-base/session";
+import { ComlinkWorker } from "ente-base/worker/comlink-worker";
+import { type ProcessableUploadItem } from "ente-gallery/services/upload";
+import { createUtilityProcess } from "ente-gallery/utils/native-worker";
+import type { EnteFile } from "ente-media/file";
+import { FileType } from "ente-media/file-type";
+import { throttled } from "ente-utils/promise";
+import pDebounce from "p-debounce";
 import { getRemoteFlag, updateRemoteFlag } from "../remote-store";
 import { setSearchPeople } from "../search";
-import type { UploadItem } from "../upload/types";
 import {
     addUserEntity,
     pullUserEntities,
@@ -26,7 +26,12 @@ import {
 import { deleteUserEntity } from "../user-entity/remote";
 import type { FaceCluster } from "./cluster";
 import { regenerateFaceCrops } from "./crop";
-import { clearMLDB, getIndexableAndIndexedCounts, savedFaceIndex } from "./db";
+import {
+    clearMLDB,
+    resetFailedFileStatuses,
+    savedFaceIndex,
+    savedIndexCounts,
+} from "./db";
 import {
     _applyPersonSuggestionUpdates,
     filterNamedPeople,
@@ -35,28 +40,26 @@ import {
     type PeopleState,
     type PersonSuggestionUpdates,
 } from "./people";
-import { MLWorker } from "./worker";
-import type { CLIPMatches } from "./worker-types";
-
 /**
  * Internal state of the ML subsystem.
  *
- * This are essentially cached values used by the functions of this module.
+ * These are essentially cached values used by the functions of this module.
  *
- * This should be cleared on logout.
+ * They will be cleared on logout.
  */
 class MLState {
     /**
      * In-memory flag that tracks if ML is enabled.
      *
-     * -   On app start, this is read from local storage during {@link initML}.
+     * - On app start, this is read from local storage during {@link initML}.
      *
-     * -   It gets updated when we sync with remote (so if the user enables/disables
-     *     ML on a different device, this local value will also become true/false).
+     * - It gets updated when we pull from remote (so if the user
+     *   enables/disables ML on a different device, this local value will also
+     *   become true/false).
      *
-     * -   It gets updated when the user enables/disables ML on this device.
+     * - It gets updated when the user enables/disables ML on this device.
      *
-     * -   It is cleared in {@link logoutML}.
+     * - It is cleared in {@link logoutML}.
      */
     isMLEnabled = false;
 
@@ -71,9 +74,8 @@ class MLState {
     isSyncing = false;
 
     /**
-     * Subscriptions to {@link MLStatus} updates.
-     *
-     * See {@link mlStatusSubscribe}.
+     * Subscriptions to {@link MLStatus} updates attached using
+     * {@link mlStatusSubscribe}.
      */
     mlStatusListeners: (() => void)[] = [];
 
@@ -84,20 +86,25 @@ class MLState {
     mlStatusSnapshot: MLStatus | undefined;
 
     /**
-     * Subscriptions to updates to the {@link PeopleState}.
-     *
-     * See {@link peopleStateSubscribe}.
+     * Subscriptions to updates to the {@link PeopleState} attached using
+     * {@link peopleStateSubscribe}.
      */
     peopleStateListeners: (() => void)[] = [];
 
     /**
-     * Snapshot of the {@link PeopleState}s. Use the {@link peopleStateSnapshot}
-     * function to access this data.
+     * Snapshot of the {@link PeopleState} return by the
+     * {@link peopleStateSnapshot} function.
      *
      * It will be `undefined` only if ML is disabled. Otherwise, it will be an
      * empty array even if the snapshot is pending its first sync.
      */
     peopleStateSnapshot: PeopleState | undefined;
+
+    /**
+     * `true` if a reset has been requested via
+     * {@link retryIndexingFailuresIfNeeded}.
+     */
+    needsResetFailures = false;
 
     /**
      * In flight face crop regeneration promises indexed by the IDs of the files
@@ -125,7 +132,7 @@ const createComlinkWorker = async () => {
     const delegate = { workerDidUpdateStatus, workerDidUnawaitedIndex };
 
     // Obtain a message port from the Electron layer.
-    const messagePort = await createMLWorker(electron);
+    const messagePort = await createUtilityProcess(electron, "ml");
 
     const cw = new ComlinkWorker<typeof MLWorker>(
         "ML",
@@ -297,7 +304,31 @@ const updateIsMLEnabledRemote = (enabled: boolean) =>
     updateRemoteFlag(mlRemoteKey, enabled);
 
 /**
- * Sync the ML status with remote.
+ * Reset failures so that indexing is attempted again.
+ *
+ * When indexing of some individual files fails for non-retriable reasons, we
+ * mark those as failures locally.
+ *
+ * See: [Note: Transient and permanent indexing failures].
+ *
+ * Sometimes we might wish to reattempt these though (e.g. when adding support
+ * for more file formats).
+ *
+ * In such cases, this function can be called early on (during an app version
+ * upgrade) to set an in-memory flag which tell us that before attemepting a
+ * sync, we should reset existing failed statii.
+ *
+ * Since this is not a critical operation, we only keep this as an in-memory
+ * flag, failure to honor this will not have permanent repercussions (e.g. the
+ * file would eventually get indexed on mobile, or during logout / login, or
+ * during the next time an reattempt is made).
+ */
+export const retryIndexingFailuresIfNeeded = () => {
+    _state.needsResetFailures = true;
+};
+
+/**
+ * Update our local ML status with the latest value from remote.
  *
  * This is called an at early point in the global sync sequence, without waiting
  * for the potentially long file information sync to complete.
@@ -305,9 +336,9 @@ const updateIsMLEnabledRemote = (enabled: boolean) =>
  * It checks with remote if the ML flag is set, and updates our local flag to
  * reflect that value.
  *
- * To perform the actual ML sync, use {@link mlSync}.
+ * To perform the actual ML data pull, use {@link mlSync}.
  */
-export const mlStatusSync = async () => {
+export const pullMLStatus = async () => {
     _state.isMLEnabled = await getIsMLEnabledRemote();
     setIsMLEnabledLocal(_state.isMLEnabled);
     return updateMLStatusSnapshot();
@@ -316,21 +347,28 @@ export const mlStatusSync = async () => {
 /**
  * Perform a ML sync, whatever is applicable.
  *
- * This is called during the global sync sequence, after files information have
- * been synced with remote.
+ * This is called during the global pull sequence, after files information have
+ * been pulled with remote.
  *
  * If ML is enabled, it pulls any missing embeddings from remote and starts
- * indexing to backfill any missing values. It also syncs cgroups and updates
+ * indexing to backfill any missing values. It also pulls cgroups and updates
  * the search service to use the latest values. Finally, it uses the latest
  * files, faces and cgroups to update the people shown in the UI.
  *
- * This will only have an effect if {@link mlStatusSync} has been called at
- * least once prior to calling this in the sync sequence.
+ * This will only have an effect if {@link pullMLStatus} has been called at
+ * least once prior to calling this in the pull sequence.
  */
 export const mlSync = async () => {
     if (!_state.isMLEnabled) return;
     if (_state.isSyncing) return;
     _state.isSyncing = true;
+
+    if (_state.needsResetFailures) {
+        // CAS. See documentation for retryIndexingFailures why swapping the
+        // flag before performing the operation is fine.
+        _state.needsResetFailures = false;
+        await resetFailedFileStatuses();
+    }
 
     // Dependency order for the sync
     //
@@ -338,17 +376,15 @@ export const mlSync = async () => {
     //
 
     // Fetch indexes, or index locally if needed.
-    await (await worker()).index();
+    await worker().then((w) => w.index());
 
     await updateClustersAndPeople();
 
     _state.isSyncing = false;
 };
 
-const workerDidUnawaitedIndex = () => void updateClustersAndPeople();
-
 const updateClustersAndPeople = async () => {
-    const masterKey = await masterKeyFromSession();
+    const masterKey = await ensureMasterKeyFromSession();
 
     // Fetch existing cgroups from remote.
     await pullUserEntities("cgroup", masterKey);
@@ -361,9 +397,32 @@ const updateClustersAndPeople = async () => {
 };
 
 /**
+ * A debounced variant of {@link updateClustersAndPeople} suitable for use
+ * during potential in-progress uploads.
+ *
+ * The debounce uses a long interval (30 seconds) to avoid unnecessary reruns of
+ * the expensive clustering as individual files get uploaded. Usually we
+ * wouldn't get here as the live queue will keep getting refilled and the worker
+ * would keep ticking, but it is possible, depending on timing, for the queue to
+ * drain in the middle of uploads too.
+ *
+ * Ideally, we'd like to do the cluster update just once when the upload has
+ * completed, however currently we don't have access to {@link uploadManager}
+ * from here. So this gets us near that ideal, without adding too much impact or
+ * requiring us to be aware of the uploadManager status.
+ */
+const debounceUpdateClustersAndPeople = pDebounce(
+    updateClustersAndPeople,
+    30 * 1e3,
+);
+
+const workerDidUnawaitedIndex = () => void debounceUpdateClustersAndPeople();
+
+/**
  * Run indexing on a file which was uploaded from this client.
  *
- * Indexing only happens if ML is enabled.
+ * Indexing only happens if ML is enabled and we're running in the desktop app
+ * as it is resource intensive.
  *
  * This function is called by the uploader when it uploads a new file from this
  * client, giving us the opportunity to index it live. This is only an
@@ -373,15 +432,19 @@ const updateClustersAndPeople = async () => {
  *
  * @param file The {@link EnteFile} that got uploaded.
  *
- * @param uploadItem The item that was uploaded. This can be used to get at the
- * contents of the file that got uploaded. In case of live photos, this is the
- * image part of the live photo that was uploaded.
+ * @param processableItem The item that was uploaded. This can be used to get at
+ * the contents of the file that got uploaded. In case of live photos, this is
+ * the image part of the live photo that was uploaded.
  */
-export const indexNewUpload = (file: EnteFile, uploadItem: UploadItem) => {
+export const indexNewUpload = (
+    file: EnteFile,
+    processableUploadItem: ProcessableUploadItem,
+) => {
     if (!isMLEnabled()) return;
-    if (file.metadata.fileType !== FileType.image) return;
-    log.debug(() => ["ml/liveq", { file, uploadItem }]);
-    void worker().then((w) => w.onUpload(file, uploadItem));
+    if (!isDesktop) return;
+    if (file.metadata.fileType != FileType.image) return;
+    log.debug(() => ["ml/liveq", { file, processableUploadItem }]);
+    void worker().then((w) => w.onUpload(file, processableUploadItem));
 };
 
 export type MLStatus =
@@ -407,22 +470,28 @@ export type MLStatus =
            *   user's library.
            */
           phase: "scheduled" | "indexing" | "fetching" | "clustering" | "done";
-          /** The number of files that have already been indexed. */
+          /**
+           * `true` if the phase is "done" but a significant fraction of files
+           * were marked as failed when indexing.
+           *
+           * This is not expected to happen normally, and points to a some
+           * systematic error in the environment (e.g. ONNX couldn't run).
+           */
+          phaseFailed?: boolean;
+          /**
+           * The number of files that have already been indexed.
+           */
           nSyncedFiles: number;
-          /** The total number of files that are eligible for indexing. */
+          /**
+           * The total number of files that are eligible for indexing.
+           */
           nTotalFiles: number;
       };
 
 /**
  * A function that can be used to subscribe to updates in the ML status.
  *
- * This, along with {@link mlStatusSnapshot}, is meant to be used as arguments
- * to React's {@link useSyncExternalStore}.
- *
- * @param callback A function that will be invoked whenever the result of
- * {@link mlStatusSnapshot} changes.
- *
- * @returns A function that can be used to clear the subscription.
+ * See: [Note: Snapshots and useSyncExternalStore].
  */
 export const mlStatusSubscribe = (onChange: () => void): (() => void) => {
     _state.mlStatusListeners.push(onChange);
@@ -436,13 +505,18 @@ export const mlStatusSubscribe = (onChange: () => void): (() => void) => {
 /**
  * Return the last known, cached {@link MLStatus}.
  *
- * This, along with {@link mlStatusSnapshot}, is meant to be used as arguments
- * to React's {@link useSyncExternalStore}.
+ * See also {@link mlStatusSubscribe}.
+ *
+ * This function can be safely called even if {@link isMLSupported} is `false`
+ * (in such cases, it will always return `undefined`). This is so that it can be
+ * unconditionally called as part of a React hook.
  *
  * A return value of `undefined` indicates that we're still performing the
  * asynchronous tasks that are needed to get the status.
  */
 export const mlStatusSnapshot = (): MLStatus | undefined => {
+    if (!isMLSupported) return undefined;
+
     const result = _state.mlStatusSnapshot;
     // We don't have it yet, trigger an update.
     if (!result) triggerStatusUpdate();
@@ -474,7 +548,7 @@ const getMLStatus = async (): Promise<MLStatus> => {
 
     // The worker has a clustering progress set iff it is clustering. This
     // overrides other behaviours.
-    const clusteringProgress = await w.clusteringProgess;
+    const clusteringProgress = await w.clusteringProgress;
     if (clusteringProgress) {
         return {
             phase: "clustering",
@@ -483,8 +557,8 @@ const getMLStatus = async (): Promise<MLStatus> => {
         };
     }
 
-    const { indexedCount, indexableCount } =
-        await getIndexableAndIndexedCounts();
+    const { indexedCount, indexableCount, failedCount } =
+        await savedIndexCounts();
 
     // During live uploads, the indexable count remains zero even as the indexer
     // is processing the newly uploaded items. This is because these "live
@@ -494,6 +568,7 @@ const getMLStatus = async (): Promise<MLStatus> => {
     // indexable count.
 
     let phase: MLStatus["phase"];
+    let phaseFailed = false;
     const state = await w.state;
     if (state == "indexing" || state == "fetching") {
         phase = state;
@@ -501,10 +576,12 @@ const getMLStatus = async (): Promise<MLStatus> => {
         phase = "scheduled";
     } else {
         phase = "done";
+        phaseFailed = failedCount > indexedCount && failedCount > 500;
     }
 
     return {
         phase,
+        phaseFailed,
         nSyncedFiles: indexedCount,
         nTotalFiles: indexableCount + indexedCount,
     };
@@ -537,13 +614,7 @@ const workerDidUpdateStatus = throttled(updateMLStatusSnapshot, 2000);
 /**
  * A function that can be used to subscribe to updates to {@link Person}s.
  *
- * This, along with {@link peopleStateSnapshot}, is meant to be used as
- * arguments to React's {@link useSyncExternalStore}.
- *
- * @param callback A function that will be invoked whenever the result of
- * {@link peopleStateSnapshot} changes.
- *
- * @returns A function that can be used to clear the subscription.
+ * See: [Note: Snapshots and useSyncExternalStore].
  */
 export const peopleStateSubscribe = (onChange: () => void): (() => void) => {
     _state.peopleStateListeners.push(onChange);
@@ -570,8 +641,7 @@ const resetPeopleStateSnapshot = () =>
 /**
  * Return the last known, cached {@link PeopleState}.
  *
- * This, along with {@link peopleStateSubscribe}, is meant to be used as
- * arguments to React's {@link useSyncExternalStore}.
+ * See also {@link peopleStateSubscribe}.
  *
  * A return value of `undefined` indicates that ML is disabled. In all other
  * cases, the list of people will be either empty (if we're either still loading
@@ -620,6 +690,7 @@ export const clipMatches = (
 export interface AnnotatedFaceID {
     faceID: string;
     personID: string;
+    personName: string | undefined;
 }
 
 /**
@@ -628,6 +699,8 @@ export interface AnnotatedFaceID {
 export const getAnnotatedFacesForFile = async (
     file: EnteFile,
 ): Promise<AnnotatedFaceID[]> => {
+    if (!isMLEnabled()) return [];
+
     const index = await savedFaceIndex(file.id);
     if (!index) return [];
 
@@ -639,12 +712,18 @@ export const getAnnotatedFacesForFile = async (
         const person = personByFaceID.get(faceID);
         if (!person) continue;
         sortableFaces.push([
-            { faceID, personID: person.id },
+            { faceID, personID: person.id, personName: person.name },
             person.fileIDs.length,
         ]);
     }
 
-    sortableFaces.sort(([, a], [, b]) => b - a);
+    sortableFaces.sort((a, b) => {
+        // If only one has a person name, prefer it.
+        if (a[0].personName && !b[0].personName) return -1;
+        if (!a[0].personName && b[0].personName) return 1;
+        // Otherwise (both named or both unnamed) sort by their number of files.
+        return b[1] - a[1];
+    });
     return sortableFaces.map(([f]) => f);
 };
 
@@ -708,15 +787,10 @@ const regenerateFaceCropsIfNeeded = async (file: EnteFile) => {
  * @returns The entity ID of the newly created cgroup.
  */
 export const addCGroup = async (name: string, cluster: FaceCluster) => {
-    const masterKey = await masterKeyFromSession();
     const id = await addUserEntity(
         "cgroup",
-        {
-            name,
-            assigned: [cluster],
-            isHidden: false,
-        },
-        masterKey,
+        { name, assigned: [cluster], isHidden: false },
+        await ensureMasterKeyFromSession(),
     );
     await mlSync();
     return id;
@@ -724,6 +798,10 @@ export const addCGroup = async (name: string, cluster: FaceCluster) => {
 
 /**
  * Add a new cluster to an existing named person.
+ *
+ * If this cluster contains any faces that had previously been marked as not
+ * belonging to the person, then they will be removed from the rejected list and
+ * will get reassociated to the person.
  *
  * @param cgroup The existing cgroup underlying the person. This is the (remote)
  * user entity that will get updated.
@@ -733,29 +811,17 @@ export const addCGroup = async (name: string, cluster: FaceCluster) => {
 export const addClusterToCGroup = async (
     cgroup: CGroup,
     cluster: FaceCluster,
-) =>
-    updateAssignedClustersForCGroup(
-        cgroup,
-        cgroup.data.assigned.concat([cluster]),
+) => {
+    const clusterFaceIDs = new Set(cluster.faces);
+    const assigned = cgroup.data.assigned.concat([cluster]);
+    const rejectedFaceIDs = cgroup.data.rejectedFaceIDs.filter(
+        (id) => !clusterFaceIDs.has(id),
     );
 
-/**
- * Update the clusters assigned to an existing named person.
- *
- * @param cgroup The existing cgroup underlying the person. This is the (remote)
- * user entity that will get updated.
- *
- * @param cluster The new value of the face clusters assigned to this person.
- */
-export const updateAssignedClustersForCGroup = async (
-    cgroup: CGroup,
-    assigned: FaceCluster[],
-) => {
-    const masterKey = await masterKeyFromSession();
     await updateOrCreateUserEntities(
         "cgroup",
-        [{ ...cgroup, data: { ...cgroup.data, assigned } }],
-        masterKey,
+        [{ ...cgroup, data: { ...cgroup.data, assigned, rejectedFaceIDs } }],
+        await ensureMasterKeyFromSession(),
     );
     return mlSync();
 };
@@ -769,11 +835,10 @@ export const updateAssignedClustersForCGroup = async (
  * user entity that will get updated.
  */
 export const renameCGroup = async (cgroup: CGroup, name: string) => {
-    const masterKey = await masterKeyFromSession();
     await updateOrCreateUserEntities(
         "cgroup",
         [{ ...cgroup, data: { ...cgroup.data, name } }],
-        masterKey,
+        await ensureMasterKeyFromSession(),
     );
     return mlSync();
 };
@@ -805,8 +870,11 @@ export const applyPersonSuggestionUpdates = async (
     cgroup: CGroup,
     updates: PersonSuggestionUpdates,
 ) => {
-    const masterKey = await masterKeyFromSession();
-    await _applyPersonSuggestionUpdates(cgroup, updates, masterKey);
+    await _applyPersonSuggestionUpdates(
+        cgroup,
+        updates,
+        await ensureMasterKeyFromSession(),
+    );
     return mlSync();
 };
 
@@ -819,15 +887,10 @@ export const applyPersonSuggestionUpdates = async (
  * @param cluster The {@link FaceCluster} to hide.
  */
 export const ignoreCluster = async (cluster: FaceCluster) => {
-    const masterKey = await masterKeyFromSession();
     await addUserEntity(
         "cgroup",
-        {
-            name: "",
-            assigned: [cluster],
-            isHidden: true,
-        },
-        masterKey,
+        { name: "", assigned: [cluster], isHidden: true },
+        await ensureMasterKeyFromSession(),
     );
     return mlSync();
 };

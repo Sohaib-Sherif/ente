@@ -1,13 +1,17 @@
-import { basename } from "@/base/file";
-import type { ElectronMLWorker } from "@/base/types/ipc";
-import type { EnteFile } from "@/media/file";
-import { FileType } from "@/media/file-type";
-import { decodeLivePhoto } from "@/media/live-photo";
-import { ensure } from "@/utils/ensure";
-import { renderableImageBlob } from "../../utils/file";
-import { readStream } from "../../utils/native-stream";
-import DownloadManager from "../download";
-import type { UploadItem } from "../upload/types";
+import { basename } from "ente-base/file-name";
+import type { ElectronMLWorker } from "ente-base/types/ipc";
+import { renderableImageBlob } from "ente-gallery/services/convert";
+import { downloadManager } from "ente-gallery/services/download";
+import {
+    fileSystemUploadItemIfUnchanged,
+    type ProcessableUploadItem,
+    type UploadItem,
+} from "ente-gallery/services/upload";
+import { readStream } from "ente-gallery/utils/native-stream";
+import type { EnteFile } from "ente-media/file";
+import { fileFileName } from "ente-media/file-metadata";
+import { FileType } from "ente-media/file-type";
+import { decodeLivePhoto } from "ente-media/live-photo";
 
 /**
  * An image bitmap and its RGBA data.
@@ -44,7 +48,7 @@ export const createImageBitmapAndData = async (
 
     // Use an OffscreenCanvas to get the bitmap's data.
     const offscreenCanvas = new OffscreenCanvas(width, height);
-    const ctx = ensure(offscreenCanvas.getContext("2d"));
+    const ctx = offscreenCanvas.getContext("2d")!;
     ctx.drawImage(imageBitmap, 0, 0, width, height);
     const imageData = ctx.getImageData(0, 0, width, height);
 
@@ -57,10 +61,10 @@ export const createImageBitmapAndData = async (
  * The blob from the relevant image component is either constructed using the
  * given {@link uploadItem} if present, otherwise it is downloaded from remote.
  *
- * -   For images it is constructed from the image.
- * -   For videos it is constructed from the thumbnail.
- * -   For live photos it is constructed from the image component of the live
- *     photo.
+ * - For images it is constructed from the image.
+ * - For videos it is constructed from the thumbnail.
+ * - For live photos it is constructed from the image component of the live
+ *   photo.
  *
  * Then, if the image blob we have seems to be something that the browser cannot
  * handle, we convert it into a JPEG blob so that it can subsequently be used to
@@ -69,34 +73,43 @@ export const createImageBitmapAndData = async (
  * @param file The {@link EnteFile} to index.
  *
  * @param uploadItem If we're called during the upload process, then this will
- * be set to the {@link UploadItem} that was uploaded. This way, we can directly
- * use the on-disk file instead of needing to download the original from remote.
+ * be set to the {@link FilesystemUploadItem} that was uploaded so that we can
+ * directly use the on-disk file instead of needing to download the original.
  *
- * @param electron The {@link ElectronMLWorker} instance that stands as a
- * witness that we're actually running in our desktop app (and thus can safely
- * call our Node.js layer for various functionality).
+ * @param electron The {@link ElectronMLWorker} instance that we can use to IPC
+ * with the Node.js layer.
  */
 export const fetchRenderableBlob = async (
     file: EnteFile,
-    uploadItem: UploadItem | undefined,
+    puItem: ProcessableUploadItem | undefined,
     electron: ElectronMLWorker,
 ): Promise<Blob> =>
-    uploadItem
-        ? await fetchRenderableUploadItemBlob(file, uploadItem, electron)
-        : await fetchRenderableEnteFileBlob(file);
+    (puItem
+        ? await fetchRenderableUploadItemBlob(file, puItem, electron)
+        : undefined) ?? (await fetchRenderableEnteFileBlob(file));
 
 const fetchRenderableUploadItemBlob = async (
     file: EnteFile,
-    uploadItem: UploadItem,
+    puItem: ProcessableUploadItem,
     electron: ElectronMLWorker,
 ) => {
-    const fileType = file.metadata.fileType;
-    if (fileType == FileType.video) {
-        const thumbnailData = await DownloadManager.getThumbnail(file);
-        return new Blob([ensure(thumbnailData)]);
+    if (file.metadata.fileType == FileType.video) {
+        const thumbnailData = await downloadManager.thumbnailData(file);
+        return new Blob([thumbnailData!]);
     } else {
+        const uploadItem =
+            puItem instanceof File
+                ? puItem
+                : await fileSystemUploadItemIfUnchanged(
+                      puItem,
+                      electron.fsStatMtime,
+                  );
+        if (!uploadItem) {
+            // The file on disk has changed. Fetch it from remote.
+            return undefined;
+        }
         const blob = await readNonVideoUploadItem(uploadItem, electron);
-        return renderableImageBlob(file.metadata.title, blob);
+        return renderableImageBlob(blob, fileFileName(file));
     }
 };
 
@@ -147,24 +160,22 @@ export const fetchRenderableEnteFileBlob = async (
 ): Promise<Blob> => {
     const fileType = file.metadata.fileType;
     if (fileType == FileType.video) {
-        const thumbnailData = await DownloadManager.getThumbnail(file);
-        return new Blob([ensure(thumbnailData)]);
+        const thumbnailData = await downloadManager.thumbnailData(file);
+        return new Blob([thumbnailData!]);
     }
 
-    const fileStream = await DownloadManager.getFile(file);
-    const originalImageBlob = await new Response(fileStream).blob();
+    const originalFileBlob = await downloadManager.fileBlob(file, {
+        background: true,
+    });
 
     if (fileType == FileType.livePhoto) {
         const { imageFileName, imageData } = await decodeLivePhoto(
-            file.metadata.title,
-            originalImageBlob,
+            fileFileName(file),
+            originalFileBlob,
         );
-        return renderableImageBlob(imageFileName, new Blob([imageData]));
+        return renderableImageBlob(new Blob([imageData]), imageFileName);
     } else if (fileType == FileType.image) {
-        return await renderableImageBlob(
-            file.metadata.title,
-            originalImageBlob,
-        );
+        return await renderableImageBlob(originalFileBlob, fileFileName(file));
     } else {
         // A layer above us should've already filtered these out.
         throw new Error(`Cannot index unsupported file type ${fileType}`);

@@ -1,5 +1,4 @@
-import { appName } from "@/base/app";
-import { AUTH_PAGES, PHOTOS_PAGES } from "@ente/shared/constants/pages";
+import { appName } from "ente-base/app";
 
 /**
  * The default page ("home route") for each of our apps.
@@ -8,9 +7,10 @@ import { AUTH_PAGES, PHOTOS_PAGES } from "@ente/shared/constants/pages";
  */
 export const appHomeRoute: string = {
     accounts: "/passkeys",
-    auth: AUTH_PAGES.AUTH,
+    auth: "/auth",
     cast: "/" /* The cast app doesn't use this, this is an arbitrary value. */,
-    photos: PHOTOS_PAGES.GALLERY,
+    locker: "/" /* The locker app also doesn't use this. */,
+    photos: "/gallery",
 }[appName];
 
 let _stashedRedirect: string | undefined;
@@ -18,7 +18,9 @@ let _stashedRedirect: string | undefined;
  * An in-memory redirect saved during the login flow (mostly).
  */
 export const stashedRedirect = () => _stashedRedirect;
+
 export const stashRedirect = (r: string) => (_stashedRedirect = r);
+
 export const unstashRedirect = () => {
     const r = _stashedRedirect;
     _stashedRedirect = undefined;

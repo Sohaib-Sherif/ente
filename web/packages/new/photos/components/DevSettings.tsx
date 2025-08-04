@@ -1,8 +1,3 @@
-import { FocusVisibleButton } from "@/base/components/mui/FocusVisibleButton";
-import { useIsSmallWidth } from "@/base/hooks";
-import { ensureOk } from "@/base/http";
-import { getKVS, removeKV, setKV } from "@/base/kv";
-import log from "@/base/log";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import {
     Dialog,
@@ -15,10 +10,15 @@ import {
     TextField,
     type ModalProps,
 } from "@mui/material";
+import { FocusVisibleButton } from "ente-base/components/mui/FocusVisibleButton";
+import { useIsSmallWidth } from "ente-base/components/utils/hooks";
+import { ensureOk } from "ente-base/http";
+import { getKVS, removeKV, setKV } from "ente-base/kv";
+import log from "ente-base/log";
 import { useFormik } from "formik";
 import { t } from "i18next";
 import React, { useEffect, useState } from "react";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { SlideUpTransition } from "./mui/SlideUpTransition";
 
 interface DevSettingsProps {
@@ -44,7 +44,7 @@ export const DevSettings: React.FC<DevSettingsProps> = ({ open, onClose }) => {
         <Dialog
             {...{ open, fullScreen }}
             onClose={handleDialogClose}
-            TransitionComponent={SlideUpTransition}
+            slots={{ transition: SlideUpTransition }}
             maxWidth="xs"
             fullWidth
         >
@@ -58,12 +58,12 @@ type ContentsProps = Pick<DevSettingsProps, "onClose">;
 const Contents: React.FC<ContentsProps> = (props) => {
     // We need two nested components.
     //
-    // -   The initialAPIOrigin cannot be in our parent (the top level
-    //     DevSettings) otherwise it gets preserved across dialog reopens
-    //     instead of being read from storage on opening the dialog.
+    // - The initialAPIOrigin cannot be in our parent (the top level
+    //   DevSettings) otherwise it gets preserved across dialog reopens instead
+    //   of being read from storage on opening the dialog.
     //
-    // -   The initialAPIOrigin cannot be in our child (Form) because Formik
-    //     doesn't have supported for async initial values.
+    // - The initialAPIOrigin cannot be in our child (Form) because Formik
+    //   doesn't have supported for async initial values.
     const [initialAPIOrigin, setInitialAPIOrigin] = useState<
         string | undefined
     >();
@@ -74,7 +74,7 @@ const Contents: React.FC<ContentsProps> = (props) => {
         [],
     );
 
-    // Even though this is async, this should be instantanous, we're just
+    // Even though this is async, this should be instantaneous, we're just
     // reading the value from the local IndexedDB.
     if (initialAPIOrigin === undefined) return <></>;
 
@@ -87,12 +87,12 @@ type FormProps = ContentsProps & {
 };
 
 const Form: React.FC<FormProps> = ({ initialAPIOrigin, onClose }) => {
-    const form = useFormik({
-        initialValues: {
-            apiOrigin: initialAPIOrigin,
-        },
+    const formik = useFormik({
+        initialValues: { apiOrigin: initialAPIOrigin },
         validate: ({ apiOrigin }) => {
             try {
+                // The expression is not unused, it is used to validate the URL.
+                // eslint-disable-next-line @typescript-eslint/no-unused-expressions
                 apiOrigin && new URL(apiOrigin);
             } catch {
                 return { apiOrigin: "Invalid endpoint" };
@@ -121,12 +121,12 @@ const Form: React.FC<FormProps> = ({ initialAPIOrigin, onClose }) => {
     // touched state of apiOrigin gets set too early, perhaps because of the
     // autoFocus).
     const hasError =
-        form.submitCount > 0 &&
-        form.touched.apiOrigin &&
-        !!form.errors.apiOrigin;
+        formik.submitCount > 0 &&
+        formik.touched.apiOrigin &&
+        !!formik.errors.apiOrigin;
 
     return (
-        <form onSubmit={form.handleSubmit}>
+        <form onSubmit={formik.handleSubmit}>
             <DialogTitle sx={{ "&&": { padding: "24px 24px 12px 24px" } }}>
                 {t("developer_settings")}
             </DialogTitle>
@@ -134,37 +134,38 @@ const Form: React.FC<FormProps> = ({ initialAPIOrigin, onClose }) => {
                 <TextField
                     fullWidth
                     autoFocus
-                    id="apiOrigin"
                     name="apiOrigin"
                     label={t("server_endpoint")}
                     placeholder="http://localhost:8080"
-                    value={form.values.apiOrigin}
-                    onChange={form.handleChange}
-                    onBlur={form.handleBlur}
+                    value={formik.values.apiOrigin}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
                     error={hasError}
                     helperText={
                         hasError
-                            ? form.errors.apiOrigin
+                            ? formik.errors.apiOrigin
                             : " " /* always show an empty string to prevent a layout shift */
                     }
-                    InputProps={{
-                        endAdornment: (
-                            <InputAdornment position="end">
-                                <Link
-                                    href="https://help.ente.io/self-hosting/guides/custom-server/"
-                                    target="_blank"
-                                    rel="noopener"
-                                >
-                                    <IconButton
-                                        aria-label={t("more_information")}
-                                        color="secondary"
-                                        edge="end"
+                    slotProps={{
+                        input: {
+                            endAdornment: (
+                                <InputAdornment position="end">
+                                    <Link
+                                        href="https://help.ente.io/self-hosting/guides/custom-server/"
+                                        target="_blank"
+                                        rel="noopener"
                                     >
-                                        <InfoOutlinedIcon />
-                                    </IconButton>
-                                </Link>
-                            </InputAdornment>
-                        ),
+                                        <IconButton
+                                            aria-label={t("more_information")}
+                                            color="secondary"
+                                            edge="end"
+                                        >
+                                            <InfoOutlinedIcon />
+                                        </IconButton>
+                                    </Link>
+                                </InputAdornment>
+                            ),
+                        },
                     }}
                 />
             </DialogContent>
@@ -173,7 +174,7 @@ const Form: React.FC<FormProps> = ({ initialAPIOrigin, onClose }) => {
                     type="submit"
                     color="accent"
                     fullWidth
-                    disabled={form.isSubmitting}
+                    disabled={formik.isSubmitting}
                 >
                     {t("save")}
                 </FocusVisibleButton>
@@ -219,6 +220,4 @@ const updateAPIOrigin = async (origin: string) => {
     await setKV("apiOrigin", origin);
 };
 
-const PingResponse = z.object({
-    message: z.enum(["pong"]),
-});
+const PingResponse = z.object({ message: z.enum(["pong"]) });

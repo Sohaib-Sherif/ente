@@ -4,6 +4,8 @@ import log from "./log";
 /**
  * Key value store schema.
  *
+ * [Note: KV DB]
+ *
  * The use IndexedDB to store arbitrary key-value pairs. The functional
  * motivation is to allow these to also be accessed from web workers (local
  * storage is limited to the main thread).
@@ -62,10 +64,10 @@ interface KVDBSchema extends DBSchema {
  * promise to the database. To ensure that all connections get torn down
  * correctly, we need to perform the following logout sequence:
  *
- * 1.  Terminate all the workers which might have one of the instances in
- *     memory. This closes their connections.
+ * 1. Terminate all the workers which might have one of the instances in memory.
+ *    This closes their connections.
  *
- * 2.  Delete the database on the main thread.
+ * 2. Delete the database on the main thread.
  */
 let _kvDB: ReturnType<typeof openKVDB> | undefined;
 
@@ -136,7 +138,7 @@ export const getKV = async (key: string) => {
     return db.get("kv", key);
 };
 
-export const _getKV = async <T extends string | number | boolean>(
+const _getKV = async <T extends string | number | boolean>(
     key: string,
     type: string,
 ): Promise<T | undefined> => {
@@ -145,6 +147,10 @@ export const _getKV = async <T extends string | number | boolean>(
     if (v === undefined) return undefined;
     if (typeof v != type)
         throw new Error(
+            // This is just an error message, it is fine if stringification
+            // produces nothing useful always, it might too in some cases.
+            //
+            // eslint-disable-next-line @typescript-eslint/no-base-to-string
             `Expected the value corresponding to key ${key} to be a ${type}, but instead got ${String(v)}`,
         );
     return v as T;

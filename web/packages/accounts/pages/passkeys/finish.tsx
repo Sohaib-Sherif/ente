@@ -1,49 +1,48 @@
-import { ActivityIndicator } from "@/base/components/mui/ActivityIndicator";
-import { fromB64URLSafeNoPaddingString } from "@/base/crypto/libsodium";
-import log from "@/base/log";
-import { nullToUndefined } from "@/utils/transform";
-import { VerticallyCentered } from "@ente/shared/components/Container";
 import {
-    LS_KEYS,
-    getData,
-    setData,
-    setLSUser,
-} from "@ente/shared/storage/localStorage";
+    saveKeyAttributes,
+    updateSavedLocalUser,
+} from "ente-accounts/services/accounts-db";
+import { clearInflightPasskeySessionID } from "ente-accounts/services/passkey";
+import { unstashRedirect } from "ente-accounts/services/redirect";
+import {
+    resetSavedLocalUserTokens,
+    TwoFactorAuthorizationResponse,
+} from "ente-accounts/services/user";
+import { LoadingIndicator } from "ente-base/components/loaders";
+import { fromB64URLSafeNoPadding } from "ente-base/crypto";
+import log from "ente-base/log";
+import { nullToUndefined } from "ente-utils/transform";
 import { useRouter } from "next/router";
 import React, { useEffect } from "react";
-import { PAGES } from "../../constants/pages";
-import { unstashRedirect } from "../../services/redirect";
-import type { PageProps } from "../../types/page";
 
 /**
+ * The page where the accounts app hands back control to us once the passkey has
+ * been verified.
+ *
+ * See: [Note: Login pages]
+ *
  * [Note: Finish passkey flow in the requesting app]
  *
  * The passkey finish step needs to happen in the context of the client which
  * invoked the passkey flow since it needs to save the obtained credentials
  * in local storage (which is tied to the current origin).
  */
-const Page: React.FC<PageProps> = () => {
+const Page: React.FC = () => {
     const router = useRouter();
 
     useEffect(() => {
-        // Extract response from query params
+        // Extract response from query params.
         const searchParams = new URLSearchParams(window.location.search);
         const passkeySessionID = searchParams.get("passkeySessionID");
         const response = searchParams.get("response");
         if (!passkeySessionID || !response) return;
 
-        saveCredentialsAndNavigateTo(passkeySessionID, response).then(
-            (slug: string) => {
-                router.push(slug);
-            },
+        void saveQueryCredentialsAndNavigateTo(passkeySessionID, response).then(
+            (slug) => router.replace(slug),
         );
-    }, []);
+    }, [router]);
 
-    return (
-        <VerticallyCentered>
-            <ActivityIndicator />
-        </VerticallyCentered>
-    );
+    return <LoadingIndicator />;
 };
 
 export default Page;
@@ -61,13 +60,19 @@ export default Page;
  *
  * @returns the slug that we should navigate to now.
  */
-const saveCredentialsAndNavigateTo = async (
+const saveQueryCredentialsAndNavigateTo = async (
     passkeySessionID: string,
     response: string,
 ) => {
+    // This function's implementation is on the same lines as that of the
+    // `saveCredentialsAndNavigateTo` function in passkey utilities.
+    //
+    // See: [Note: Ending the passkey flow]
+
     const inflightPasskeySessionID = nullToUndefined(
         sessionStorage.getItem("inflightPasskeySessionID"),
     );
+
     if (
         !inflightPasskeySessionID ||
         passkeySessionID != inflightPasskeySessionID
@@ -81,36 +86,21 @@ const saveCredentialsAndNavigateTo = async (
         return "/";
     }
 
-    sessionStorage.removeItem("inflightPasskeySessionID");
+    clearInflightPasskeySessionID();
 
     // Decode response string (inverse of the steps we perform in
     // `passkeyAuthenticationSuccessRedirectURL`).
-    const decodedResponse = JSON.parse(
-        await fromB64URLSafeNoPaddingString(response),
+    const decodedResponse = TwoFactorAuthorizationResponse.parse(
+        JSON.parse(
+            new TextDecoder().decode(await fromB64URLSafeNoPadding(response)),
+        ),
     );
 
-    // Only one of `encryptedToken` or `token` will be present depending on the
-    // account's lifetime:
-    //
-    // - The plaintext "token" will be passed during fresh signups, where we
-    //   don't yet have keys to encrypt it, the account itself is being created
-    //   as we go through this flow.
-    //   TODO(MR): Conceptually this cannot happen. During a _real_ fresh signup
-    //   we'll never enter the passkey verification flow. Remove this code after
-    //   making sure that it doesn't get triggered in cases where an existing
-    //   user goes through the new user flow.
-    //
-    // - The encrypted `encryptedToken` will be present otherwise (i.e. if the
-    //   user is signing into an existing account).
-    const { keyAttributes, encryptedToken, token, id } = decodedResponse;
+    const { id, keyAttributes, encryptedToken } = decodedResponse;
 
-    await setLSUser({
-        ...getData(LS_KEYS.USER),
-        token,
-        encryptedToken,
-        id,
-    });
-    setData(LS_KEYS.KEY_ATTRIBUTES, keyAttributes);
+    await resetSavedLocalUserTokens(id, encryptedToken);
+    updateSavedLocalUser({ passkeySessionID: undefined });
+    saveKeyAttributes(keyAttributes);
 
-    return unstashRedirect() ?? PAGES.CREDENTIALS;
+    return unstashRedirect() ?? "/credentials";
 };

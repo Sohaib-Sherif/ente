@@ -1,16 +1,14 @@
-import { clientPackageName } from "@/base/app";
+import { TwoFactorAuthorizationResponse } from "ente-accounts/services/user";
+import { clientPackageName } from "ente-base/app";
 import {
     fromB64URLSafeNoPadding,
     toB64URLSafeNoPadding,
-    toB64URLSafeNoPaddingString,
-} from "@/base/crypto/libsodium";
-import { isDevBuild } from "@/base/env";
-import { clientPackageHeader, ensureOk, HTTPError } from "@/base/http";
-import { apiURL } from "@/base/origins";
-import { TwoFactorAuthorizationResponse } from "@/base/types/credentials";
-import { ensure } from "@/utils/ensure";
-import { nullToUndefined } from "@/utils/transform";
-import { z } from "zod";
+} from "ente-base/crypto";
+import { isDevBuild } from "ente-base/env";
+import { ensureOk, HTTPError, publicRequestHeaders } from "ente-base/http";
+import { apiURL } from "ente-base/origins";
+import { nullToUndefined } from "ente-utils/transform";
+import { z } from "zod/v4";
 
 /** Return true if the user's browser supports WebAuthn (Passkeys). */
 export const isWebAuthnSupported = () => !!navigator.credentials;
@@ -37,7 +35,7 @@ const Passkey = z.object({
      */
     friendlyName: z.string(),
     /**
-     * Epoch milliseconds when this passkey was created.
+     * Epoch microseconds when this passkey was created.
      */
     createdAt: z.number(),
 });
@@ -79,9 +77,8 @@ export const renamePasskey = async (
     id: string,
     name: string,
 ) => {
-    const params = new URLSearchParams({ friendlyName: name });
-    const url = await apiURL(`/passkeys/${id}`);
-    const res = await fetch(`${url}?${params.toString()}`, {
+    const url = await apiURL(`/passkeys/${id}`, { friendlyName: name });
+    const res = await fetch(url, {
         method: "PATCH",
         headers: accountsAuthenticatedRequestHeaders(token),
     });
@@ -116,7 +113,7 @@ export const registerPasskey = async (token: string, name: string) => {
     const { sessionID, options } = await beginPasskeyRegistration(token);
 
     // Ask the browser to new (public key) credentials using these options.
-    const credential = ensure(await navigator.credentials.create(options));
+    const credential = (await navigator.credentials.create(options))!;
 
     // Finish by letting the backend know about these credentials so that it can
     // save the public key for future authentication.
@@ -140,9 +137,7 @@ interface BeginPasskeyRegistrationResponse {
      * Options that should be passed to `navigator.credential.create` when
      * creating the new {@link Credential}.
      */
-    options: {
-        publicKey: PublicKeyCredentialCreationOptions;
-    };
+    options: { publicKey: PublicKeyCredentialCreationOptions };
 }
 
 const beginPasskeyRegistration = async (token: string) => {
@@ -185,14 +180,14 @@ const beginPasskeyRegistration = async (token: string) => {
     //
     // So we do the conversion here.
     //
-    // 1.  To avoid inventing an intermediary type and the boilerplate that'd
-    //     come with it, we do a force typecast the options in the response to
-    //     one that has `PublicKeyCredentialCreationOptions`.
+    // 1. To avoid inventing an intermediary type and the boilerplate that'd
+    //    come with it, we do a force typecast the options in the response to
+    //    one that has `PublicKeyCredentialCreationOptions`.
     //
-    // 2.  Convert the two binary data fields that are expected to be in the
-    //     response from URLEncodedBase64 strings to Uint8Arrays. There is a
-    //     third possibility, excludedCredentials[].id, but that we don't
-    //     currently use.
+    // 2. Convert the two binary data fields that are expected to be in the
+    //    response from URLEncodedBase64 strings to Uint8Arrays. There is a
+    //    third possibility, excludedCredentials[].id, but that we don't
+    //    currently use.
     //
     // The web.dev guide calls this out too:
     //
@@ -288,9 +283,11 @@ const finishPasskeyRegistration = async ({
     );
     const transports = attestationResponse.getTransports();
 
-    const params = new URLSearchParams({ friendlyName, sessionID });
-    const url = await apiURL("/passkeys/registration/finish");
-    const res = await fetch(`${url}?${params.toString()}`, {
+    const url = await apiURL("/passkeys/registration/finish", {
+        friendlyName,
+        sessionID,
+    });
+    const res = await fetch(url, {
         method: "POST",
         headers: accountsAuthenticatedRequestHeaders(token),
         body: JSON.stringify({
@@ -300,11 +297,7 @@ const finishPasskeyRegistration = async ({
             // anyways for transmission, we can just reuse the same string.
             rawId: credential.id,
             type: credential.type,
-            response: {
-                attestationObject,
-                clientDataJSON,
-                transports,
-            },
+            response: { attestationObject, clientDataJSON, transports },
         }),
     });
     ensureOk(res);
@@ -380,9 +373,7 @@ export interface BeginPasskeyAuthenticationResponse {
      * Options that should be passed to `navigator.credential.get` to obtain the
      * attested {@link Credential}.
      */
-    options: {
-        publicKey: PublicKeyCredentialRequestOptions;
-    };
+    options: { publicKey: PublicKeyCredentialRequestOptions };
 }
 
 /**
@@ -413,7 +404,7 @@ export const beginPasskeyAuthentication = async (
     const url = await apiURL("/users/two-factor/passkeys/begin");
     const res = await fetch(url, {
         method: "POST",
-        headers: clientPackageHeader(),
+        headers: publicRequestHeaders(),
         body: JSON.stringify({ sessionID: passkeySessionID }),
     });
     if (!res.ok) {
@@ -628,8 +619,10 @@ export const passkeyAuthenticationSuccessRedirectURL = async (
     passkeySessionID: string,
     twoFactorAuthorizationResponse: TwoFactorAuthorizationResponse,
 ) => {
-    const encodedResponse = await toB64URLSafeNoPaddingString(
-        JSON.stringify(twoFactorAuthorizationResponse),
+    const encodedResponse = await toB64URLSafeNoPadding(
+        new TextEncoder().encode(
+            JSON.stringify(twoFactorAuthorizationResponse),
+        ),
     );
     redirectURL.searchParams.set("passkeySessionID", passkeySessionID);
     redirectURL.searchParams.set("response", encodedResponse);

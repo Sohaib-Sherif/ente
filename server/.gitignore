@@ -8,4 +8,9 @@ tmp/**
 museum.yaml
 bin/**
 data/
-.env
+my-ente/
+__debug_bin*
+config/.env
+config/museum.yaml
+main
+credentials

@@ -1,131 +1,125 @@
-import { sendOtt } from "@/accounts/api/user";
-import { PAGES } from "@/accounts/constants/pages";
-import { sharedCryptoWorker } from "@/base/crypto";
-import log from "@/base/log";
-import { ensure } from "@/utils/ensure";
-import { VerticallyCentered } from "@ente/shared/components/Container";
-import FormPaper from "@ente/shared/components/Form/FormPaper";
-import FormPaperFooter from "@ente/shared/components/Form/FormPaper/Footer";
-import FormPaperTitle from "@ente/shared/components/Form/FormPaper/Title";
-import LinkButton from "@ente/shared/components/LinkButton";
-import SingleInputForm, {
-    type SingleInputFormProps,
-} from "@ente/shared/components/SingleInputForm";
 import {
-    decryptAndStoreToken,
-    saveKeyInSessionStore,
-} from "@ente/shared/crypto/helpers";
-import { LS_KEYS, getData, setData } from "@ente/shared/storage/localStorage";
-import { SESSION_KEYS, getKey } from "@ente/shared/storage/sessionStorage";
-import type { KeyAttributes, User } from "@ente/shared/user/types";
+    AccountsPageContents,
+    AccountsPageFooter,
+    AccountsPageTitle,
+} from "ente-accounts/components/layouts/centered-paper";
+import {
+    savedKeyAttributes,
+    savedPartialLocalUser,
+} from "ente-accounts/services/accounts-db";
+import { recoveryKeyFromMnemonic } from "ente-accounts/services/recovery-key";
+import { appHomeRoute, stashRedirect } from "ente-accounts/services/redirect";
+import type { KeyAttributes } from "ente-accounts/services/user";
+import {
+    decryptAndStoreTokenIfNeeded,
+    sendOTT,
+} from "ente-accounts/services/user";
+import { LinkButton } from "ente-base/components/LinkButton";
+import {
+    SingleInputForm,
+    type SingleInputFormProps,
+} from "ente-base/components/SingleInputForm";
+import { useBaseContext } from "ente-base/context";
+import { decryptBox } from "ente-base/crypto";
+import log from "ente-base/log";
+import {
+    haveMasterKeyInSession,
+    saveMasterKeyInSessionAndSafeStore,
+} from "ente-base/session";
 import { t } from "i18next";
 import { useRouter } from "next/router";
-import { useEffect, useState } from "react";
-import { appHomeRoute, stashRedirect } from "../services/redirect";
-import type { PageProps } from "../types/page";
+import { useCallback, useEffect, useState } from "react";
 
-const bip39 = require("bip39");
-// mobile client library only supports english.
-bip39.setDefaultWordlist("english");
-
-const Page: React.FC<PageProps> = ({ appContext }) => {
-    const { showNavBar, showMiniDialog } = appContext;
+/**
+ * A page that allows the user to enter their recovery key to recover their
+ * master key if they've forgotten their password.
+ *
+ * See: [Note: Login pages]
+ */
+const Page: React.FC = () => {
+    const { showMiniDialog } = useBaseContext();
 
     const [keyAttributes, setKeyAttributes] = useState<
         KeyAttributes | undefined
-    >();
+    >(undefined);
 
     const router = useRouter();
 
     useEffect(() => {
-        const user: User = getData(LS_KEYS.USER);
-        const keyAttributes: KeyAttributes = getData(LS_KEYS.KEY_ATTRIBUTES);
-        const key = getKey(SESSION_KEYS.ENCRYPTION_KEY);
-        if (!user?.email) {
-            router.push("/");
-            return;
-        }
-        if (!user?.encryptedToken && !user?.token) {
-            sendOtt(user.email);
-            stashRedirect(PAGES.RECOVER);
-            router.push(PAGES.VERIFY);
-            return;
-        }
-        if (!keyAttributes) {
-            router.push(PAGES.GENERATE);
-        } else if (key) {
-            router.push(appHomeRoute);
-        } else {
-            setKeyAttributes(keyAttributes);
-        }
-        showNavBar(true);
-    }, []);
-
-    const recover: SingleInputFormProps["callback"] = async (
-        recoveryKey: string,
-        setFieldError,
-    ) => {
-        try {
-            recoveryKey = recoveryKey
-                .trim()
-                .split(" ")
-                .map((part) => part.trim())
-                .filter((part) => !!part)
-                .join(" ");
-            // check if user is entering mnemonic recovery key
-            if (recoveryKey.indexOf(" ") > 0) {
-                if (recoveryKey.split(" ").length !== 24) {
-                    throw new Error("recovery code should have 24 words");
-                }
-                recoveryKey = bip39.mnemonicToEntropy(recoveryKey);
+        void (async () => {
+            const user = savedPartialLocalUser();
+            if (!user?.email) {
+                await router.replace("/");
+                return;
             }
-            const cryptoWorker = await sharedCryptoWorker();
-            const keyAttr = ensure(keyAttributes);
-            const masterKey = await cryptoWorker.decryptB64(
-                keyAttr.masterKeyEncryptedWithRecoveryKey,
-                keyAttr.masterKeyDecryptionNonce,
-                await cryptoWorker.fromHex(recoveryKey),
-            );
-            await saveKeyInSessionStore(SESSION_KEYS.ENCRYPTION_KEY, masterKey);
-            await decryptAndStoreToken(keyAttr, masterKey);
 
-            setData(LS_KEYS.SHOW_BACK_BUTTON, { value: false });
-            router.push(PAGES.CHANGE_PASSWORD);
-        } catch (e) {
-            log.error("password recovery failed", e);
-            setFieldError(t("INCORRECT_RECOVERY_KEY"));
-        }
-    };
+            if (!user.encryptedToken && !user.token) {
+                await sendOTT(user.email, undefined);
+                stashRedirect("/recover");
+                await router.replace("/verify");
+                return;
+            }
 
-    const showNoRecoveryKeyMessage = () =>
+            const keyAttributes = savedKeyAttributes();
+            if (!keyAttributes) {
+                await router.replace("/generate");
+            } else if (haveMasterKeyInSession()) {
+                await router.replace(appHomeRoute);
+            } else {
+                setKeyAttributes(keyAttributes);
+            }
+        })();
+    }, [router]);
+
+    const handleSubmit: SingleInputFormProps["onSubmit"] = useCallback(
+        async (recoveryKeyMnemonic: string, setFieldError) => {
+            try {
+                const keyAttr = keyAttributes!;
+                const masterKey = await decryptBox(
+                    {
+                        encryptedData:
+                            keyAttr.masterKeyEncryptedWithRecoveryKey!,
+                        nonce: keyAttr.masterKeyDecryptionNonce!,
+                    },
+                    await recoveryKeyFromMnemonic(recoveryKeyMnemonic),
+                );
+                await saveMasterKeyInSessionAndSafeStore(masterKey);
+                await decryptAndStoreTokenIfNeeded(keyAttr, masterKey);
+
+                void router.push("/change-password?op=reset");
+            } catch (e) {
+                log.error("Master key recovery failed", e);
+                setFieldError(t("incorrect_recovery_key"));
+            }
+        },
+        [router, keyAttributes],
+    );
+
+    const showNoRecoveryKeyMessage = useCallback(() => {
         showMiniDialog({
             title: t("sorry"),
             message: t("no_recovery_key_message"),
             continue: { color: "secondary" },
             cancel: false,
         });
+    }, [showMiniDialog]);
 
     return (
-        <VerticallyCentered>
-            <FormPaper>
-                <FormPaperTitle>{t("RECOVER_ACCOUNT")}</FormPaperTitle>
-                <SingleInputForm
-                    callback={recover}
-                    fieldType="text"
-                    placeholder={t("RECOVERY_KEY_HINT")}
-                    buttonText={t("RECOVER")}
-                    disableAutoComplete
-                />
-                <FormPaperFooter style={{ justifyContent: "space-between" }}>
-                    <LinkButton onClick={showNoRecoveryKeyMessage}>
-                        {t("NO_RECOVERY_KEY")}
-                    </LinkButton>
-                    <LinkButton onClick={router.back}>
-                        {t("GO_BACK")}
-                    </LinkButton>
-                </FormPaperFooter>
-            </FormPaper>
-        </VerticallyCentered>
+        <AccountsPageContents>
+            <AccountsPageTitle>{t("recover_account")}</AccountsPageTitle>
+            <SingleInputForm
+                autoComplete="off"
+                label={t("recovery_key")}
+                submitButtonTitle={t("recover")}
+                onSubmit={handleSubmit}
+            />
+            <AccountsPageFooter>
+                <LinkButton onClick={showNoRecoveryKeyMessage}>
+                    {t("no_recovery_key_title")}
+                </LinkButton>
+                <LinkButton onClick={router.back}>{t("go_back")}</LinkButton>
+            </AccountsPageFooter>
+        </AccountsPageContents>
     );
 };
 

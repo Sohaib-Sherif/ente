@@ -1,4 +1,4 @@
-import { getKVS } from "@/base/kv";
+import { getKVS } from "ente-base/kv";
 
 /**
  * Return the origin (scheme, host, port triple) that should be used for making
@@ -21,17 +21,23 @@ export const apiOrigin = async () =>
  *
  * @param queryParams An optional object containing query params. This is
  * appended to the generated URL after funneling it through
- * {@link URLSearchParams}.
+ * {@link URLSearchParams}. Each value can be a `string` or `number` or
+ * `boolean` - all of which are converted to `string`s by using `toString`
+ *
+ * > The boolean stringification yields "true" or "false".
  *
  * @returns path prefixed by {@link apiOrigin}.
  */
 export const apiURL = async (
     path: string,
-    queryParams?: Record<string, string>,
+    queryParams?: Record<string, string | number | boolean>,
 ) => {
     let url = (await apiOrigin()) + path;
     if (queryParams) {
-        const params = new URLSearchParams(queryParams);
+        const stringQP = Object.fromEntries(
+            Object.entries(queryParams).map(([k, v]) => [k, v.toString()]),
+        );
+        const params = new URLSearchParams(stringQP);
         url = `${url}?${params.toString()}`;
     }
     return url;
@@ -41,10 +47,10 @@ export const apiURL = async (
  * Return the overridden API origin, if one is defined by either (in priority
  * order):
  *
- * -   Setting the custom server on the landing page (See: [Note: Configuring
- *     custom server]); or by
+ * - Setting the custom server on the landing page (See: [Note: Configuring
+ *   custom server]); or by
  *
- * -   Setting the `NEXT_PUBLIC_ENTE_ENDPOINT` environment variable.
+ * - Setting the `NEXT_PUBLIC_ENTE_ENDPOINT` environment variable.
  *
  * Otherwise return undefined.
  */
@@ -76,14 +82,11 @@ export const uploaderOrigin = async () =>
     (await customAPIOrigin()) ?? "https://uploader.ente.io";
 
 /**
- * Return the origin that serves the accounts app.
- *
- * Defaults to our production instance, "https://accounts.ente.io", but can be
- * overridden by setting the `NEXT_PUBLIC_ENTE_ACCOUNTS_URL` environment
- * variable.
+ * A static build time constant that is `true` if {@link albumsAppOrigin} has
+ * been customized.
  */
-export const accountsAppOrigin = () =>
-    process.env.NEXT_PUBLIC_ENTE_ACCOUNTS_URL ?? `https://accounts.ente.io`;
+export const isCustomAlbumsAppOrigin =
+    !!process.env.NEXT_PUBLIC_ENTE_ALBUMS_ENDPOINT;
 
 /**
  * Return the origin that serves public albums.
@@ -94,22 +97,3 @@ export const accountsAppOrigin = () =>
  */
 export const albumsAppOrigin = () =>
     process.env.NEXT_PUBLIC_ENTE_ALBUMS_ENDPOINT ?? "https://albums.ente.io";
-
-/**
- * Return the origin that serves the family dashboard which can be used to
- * create or manage family plans..
- *
- * Defaults to our production instance, "https://family.ente.io", but can be
- * overridden by setting the `NEXT_PUBLIC_ENTE_FAMILY_URL` environment variable.
- */
-export const familyAppOrigin = () =>
-    process.env.NEXT_PUBLIC_ENTE_FAMILY_URL ?? "https://family.ente.io";
-
-/**
- * Return the origin that serves the payments app.
- *
- * Defaults to our production instance, "https://payments.ente.io", but can be
- * overridden by setting the `NEXT_PUBLIC_ENTE_PAYMENTS_URL` environment variable.
- */
-export const paymentsAppOrigin = () =>
-    process.env.NEXT_PUBLIC_ENTE_PAYMENTS_URL ?? "https://payments.ente.io";

@@ -1,31 +1,23 @@
-import { staticAppTitle } from "@/base/app";
-import { CustomHead } from "@/base/components/Head";
-import { disableDiskLogs } from "@/base/log";
-import { logUnhandledErrorsAndRejections } from "@/base/log-web";
-import { getTheme } from "@ente/shared/themes";
-import { THEME_COLOR } from "@ente/shared/themes/constants";
+import "@fontsource-variable/inter";
 import { CssBaseline, ThemeProvider } from "@mui/material";
+import { staticAppTitle } from "ente-base/app";
+import { CustomHead } from "ente-base/components/Head";
+import { useSetupLogs } from "ente-base/components/utils/hooks-app";
+import { castTheme } from "ente-base/components/utils/theme";
 import type { AppProps } from "next/app";
-import React, { useEffect } from "react";
-
-import "styles/global.css";
+import React from "react";
 
 const App: React.FC<AppProps> = ({ Component, pageProps }) => {
-    useEffect(() => {
-        disableDiskLogs();
-        logUnhandledErrorsAndRejections(true);
-        return () => logUnhandledErrorsAndRejections(false);
-    }, []);
+    useSetupLogs({ disableDiskLogs: true });
+
+    // We don't provide BaseContext. Nothing in the cast app needs it yet.
 
     return (
-        <>
+        <ThemeProvider theme={castTheme}>
             <CustomHead title={staticAppTitle} />
-
-            <ThemeProvider theme={getTheme(THEME_COLOR.DARK, "photos")}>
-                <CssBaseline enableColorScheme />
-                <Component {...pageProps} />
-            </ThemeProvider>
-        </>
+            <CssBaseline enableColorScheme />
+            <Component {...pageProps} />
+        </ThemeProvider>
     );
 };
 

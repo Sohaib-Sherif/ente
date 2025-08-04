@@ -5,18 +5,20 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 
 	"github.com/ente-io/museum/pkg/controller/usercache"
 
 	"github.com/ente-io/museum/ente"
-	storeageBonusEntity "github.com/ente-io/museum/ente/storagebonus"
+	storageBonusEntity "github.com/ente-io/museum/ente/storagebonus"
 	"github.com/ente-io/museum/pkg/controller/discord"
 	"github.com/ente-io/museum/pkg/repo"
 	"github.com/ente-io/museum/pkg/repo/storagebonus"
 	"github.com/ente-io/museum/pkg/utils/array"
 	"github.com/ente-io/museum/pkg/utils/billing"
 	"github.com/ente-io/museum/pkg/utils/config"
+	emailUtil "github.com/ente-io/museum/pkg/utils/email"
 	"github.com/ente-io/museum/pkg/utils/time"
 	"github.com/ente-io/stacktrace"
 	log "github.com/sirupsen/logrus"
@@ -40,15 +42,15 @@ func NewOfferController(
 	blackFridayOffers := make(ente.BlackFridayOfferPerCountry)
 	path, err := config.BillingConfigFilePath("black-friday.json")
 	if err != nil {
-		log.Fatalf("Error getting offer config file: %v", err)
+		log.Fatalf("Skipping BF configuration, config file not found: %v", err)
 	}
 	data, err := os.ReadFile(path)
 	if err != nil {
-		log.Error("Error reading config file", err)
+		log.Info("Skipping optional Black Friday offers", err)
 	}
 	err = json.Unmarshal(data, &blackFridayOffers)
 	if err != nil {
-		log.Error("Error un-marshalling JSON", err)
+		log.Info("Could not get Black Friday Offer", err)
 	}
 	return &OfferController{
 		BlackFridayOffers: blackFridayOffers,
@@ -87,10 +89,12 @@ func (c *OfferController) ApplyOffer(email string, productID string) error {
 		return stacktrace.Propagate(ente.ErrNotFound, "Could not find an offer for  "+productID)
 	}
 	var validTill int64
-	if offerToBeApplied.Period == ente.Period3Years {
+	if offerToBeApplied.PeriodInYears == ente.Period3Years {
 		validTill = time.NDaysFromNow(3 * 365)
-	} else if offerToBeApplied.Period == ente.Period5Years {
+	} else if offerToBeApplied.PeriodInYears == ente.Period5Years {
 		validTill = time.NDaysFromNow(5 * 365)
+	} else if offerToBeApplied.PeriodInYears == ente.Period10Years {
+		validTill = time.NDaysFromNow(10 * 365)
 	} else {
 		return stacktrace.Propagate(ente.ErrNotFound, "Could not find a valid time period for  "+productID)
 	}
@@ -106,12 +110,21 @@ func (c *OfferController) ApplyOffer(email string, productID string) error {
 		}
 	}
 
-	err = c.StorageBonusRepo.InsertAddOnBonus(context.Background(), storeageBonusEntity.AddOnBf2023, userID, validTill, offerToBeApplied.Storage)
+	err = c.StorageBonusRepo.InsertAddOnBonus(context.Background(), storageBonusEntity.AddOnBf2024, userID, validTill, offerToBeApplied.Storage)
 	if err != nil {
 		c.DiscordController.Notify("Error inserting bonus")
 		return stacktrace.Propagate(err, "")
 	}
 	go c.UserCacheCtrl.GetActiveStorageBonus(context.Background(), userID)
+	go emailUtil.SendTemplatedEmail([]string{email}, "Ente", "team@ente.io",
+		ente.BF2024EmailSubject,
+		ente.BF2024EmailTemplate, map[string]interface{}{
+			"Storage": c.readableStorage(offerToBeApplied.Storage),
+		}, nil)
 	c.DiscordController.NotifyBlackFridayUser(userID, offerToBeApplied.Price)
 	return nil
+}
+
+func (c *OfferController) readableStorage(storage int64) string {
+	return fmt.Sprintf("%d GB", storage/(1<<30))
 }

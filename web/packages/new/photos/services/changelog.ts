@@ -1,4 +1,4 @@
-import type { Electron } from "@/base/types/ipc";
+import type { Electron } from "ente-base/types/ipc";
 
 /**
  * The current changelog version.
@@ -17,16 +17,16 @@ import type { Electron } from "@/base/types/ipc";
  *
  * On app start, we read the last saved version:
  *
- * -   If it is not present, we set it to the current version _without_ showing
- *     the what's new dialog. This is to handle fresh installs.
+ * - If it is not present, we set it to the current version _without_ showing
+ *   the what's new dialog. This is to handle fresh installs.
  *
- * -   If it is present and less than the current version, we show the what's
- *     new dialog. Otherwise do nothing.
+ * - If it is present and less than the current version, we show the what's new
+ *   dialog. Otherwise do nothing.
  *
  * The what's new dialog sets the saved version to the current one whenever it
  * is shown.
  */
-const changelogVersion = 2;
+const changelogVersion = 3;
 
 /**
  * Return true if we should show the {@link WhatsNew} dialog.
