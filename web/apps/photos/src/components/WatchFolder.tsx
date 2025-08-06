@@ -269,12 +269,6 @@ const FolderPath: React.FC<React.PropsWithChildren> = ({ children }) => (
     </EllipsizedTypography>
 );
 
-const FolderPath: React.FC<React.PropsWithChildren> = ({ children }) => (
-    <EllipsizedTypography variant="small" color="text.muted">
-        {children}
-    </EllipsizedTypography>
-);
-
 interface EntryOptionsProps {
     confirmStopWatching: () => void;
 }
