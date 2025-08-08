@@ -2,9 +2,9 @@
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
+# ashburn - virginia
 
 app = 'ente'
-# ashburn - virginia
 primary_region = 'iad'
 
 [build]
