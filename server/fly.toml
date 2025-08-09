@@ -27,7 +27,7 @@ ENTE_APPS__PUBLIC_ALBUMS = "https://albums.kanz.pictures"
 
 ENTE_DB__PORT = "5432"
 ENTE_DB__NAME = "postgres"
-ENTE_DB__SSLMODE = "require"
+ENTE_DB__SSLMODE = "disable"
 ENTE_DB__USER = "postgres"
 
 ENTE_S3__HOT_STORAGE__PRIMARY = "b2-eu-cen"
