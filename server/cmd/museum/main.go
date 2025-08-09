@@ -5,9 +5,6 @@ import (
 	"database/sql"
 	b64 "encoding/base64"
 	"fmt"
-	"github.com/ente-io/museum/pkg/controller/collections"
-	publicCtrl "github.com/ente-io/museum/pkg/controller/public"
-	"github.com/ente-io/museum/pkg/repo/public"
 	"net/http"
 	"os"
 	"os/signal"
@@ -16,6 +13,10 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/ente-io/museum/pkg/controller/collections"
+	publicCtrl "github.com/ente-io/museum/pkg/controller/public"
+	"github.com/ente-io/museum/pkg/repo/public"
 
 	"github.com/ente-io/museum/ente/base"
 	"github.com/ente-io/museum/pkg/controller/emergency"
@@ -1062,7 +1063,8 @@ func cors() gin.HandlerFunc {
 		if c.Request.Method == http.MethodOptions {
 			// While 204 No Content is more appropriate, Safari intermittently
 			// (intermittently!) fails CORS if we return 204 instead of 200 OK.
-			c.Status(http.StatusOK)
+			// Use AbortWithStatus to prevent the request from continuing to auth middleware
+			c.AbortWithStatus(http.StatusOK)
 			return
 		}
 		c.Next()
