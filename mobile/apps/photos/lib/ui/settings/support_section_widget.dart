@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:photos/core/constants.dart';
 import "package:photos/generated/l10n.dart";
@@ -18,21 +16,19 @@ class SupportSectionWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ExpandableMenuItemWidget(
-      title: S.of(context).support,
+      title: AppLocalizations.of(context).support,
       selectionOptionsWidget: _getSectionOptions(context),
       leadingIcon: Icons.help_outline_outlined,
     );
   }
 
   Widget _getSectionOptions(BuildContext context) {
-    final String bugsEmail =
-        Platform.isAndroid ? "android-bugs@ente.io" : "ios-bugs@ente.io";
     return Column(
       children: [
         sectionOptionSpacing,
         MenuItemWidget(
           captionedTextWidget: CaptionedTextWidget(
-            title: S.of(context).contactSupport,
+            title: AppLocalizations.of(context).contactSupport,
           ),
           pressedColor: getEnteColorScheme(context).fillFaint,
           trailingIcon: Icons.chevron_right_outlined,
@@ -43,13 +39,13 @@ class SupportSectionWidget extends StatelessWidget {
         ),
         sectionOptionSpacing,
         AboutMenuItemWidget(
-          title: S.of(context).help,
-          url: "https://help.ente.io",
+          title: AppLocalizations.of(context).help,
+          url: "https://ente.io/help",
         ),
         sectionOptionSpacing,
         MenuItemWidget(
           captionedTextWidget: CaptionedTextWidget(
-            title: S.of(context).suggestFeatures,
+            title: AppLocalizations.of(context).suggestFeatures,
           ),
           pressedColor: getEnteColorScheme(context).fillFaint,
           trailingIcon: Icons.chevron_right_outlined,
@@ -65,17 +61,21 @@ class SupportSectionWidget extends StatelessWidget {
         sectionOptionSpacing,
         MenuItemWidget(
           captionedTextWidget: CaptionedTextWidget(
-            title: S.of(context).reportABug,
+            title: AppLocalizations.of(context).reportABug,
           ),
           pressedColor: getEnteColorScheme(context).fillFaint,
           trailingIcon: Icons.chevron_right_outlined,
           trailingIconIsMuted: true,
           onTap: () async {
-            await sendLogs(context, S.of(context).reportBug, bugsEmail);
+            await sendLogs(
+              context,
+              AppLocalizations.of(context).reportBug,
+              supportEmail,
+            );
           },
           onLongPress: () async {
             final zipFilePath = await getZippedLogsFile(context);
-            await shareLogs(context, bugsEmail, zipFilePath);
+            await shareLogs(context, supportEmail, zipFilePath);
           },
         ),
         sectionOptionSpacing,

@@ -41,11 +41,14 @@ export const parseExif = (tags: RawExifTags) => {
     const creationDate = parseCreationDate(tags);
     const dimensions = parseDimensions(tags);
     const description = parseDescription(tags);
+    const camera = parseCamera(tags);
 
     const metadata: ParsedMetadata = dimensions ?? {};
     if (creationDate) metadata.creationDate = creationDate;
     if (location) metadata.location = location;
     if (description) metadata.description = description;
+    if (camera?.make) metadata.cameraMake = camera.make;
+    if (camera?.model) metadata.cameraModel = camera.model;
     return metadata;
 };
 
@@ -111,8 +114,14 @@ const parseDates = (tags: RawExifTags) => {
     // Some customers (not sure how prevalent this is) reported photos with Exif
     // dates set to "0000:00:00 00:00:00". Ignore any date whose timestamp is 0
     // so that we try with a subsequent (possibly correct) date in the sequence.
-    const valid = (d: ParsedMetadataDate | undefined) =>
-        d?.timestamp ? d : undefined;
+    //
+    // Filter out a known corrupted date value, "4501:01:01 00:00:00".
+    // Certain devices default to this bogus timestamp, so skip it to allow other dates.
+    const valid = (d: ParsedMetadataDate | undefined) => {
+        if (!d?.timestamp) return undefined;
+        if (d.dateTime === "4501-01-01T00:00:00.000") return undefined;
+        return d;
+    };
 
     const exif = parseExifDates(tags);
     const iptc = parseIPTCDates(tags);
@@ -371,6 +380,33 @@ const parseDimensions = (tags: RawExifTags) => {
     const pair = (w: number | undefined, h: number | undefined) =>
         w && h ? { width: w, height: h } : undefined;
 
+    const shouldSwapForExifOrientation = (orientation: number | undefined) => {
+        switch (orientation) {
+            case 5:
+            case 6:
+            case 7:
+            case 8:
+                return true;
+            default:
+                return false;
+        }
+    };
+
+    const shouldSwapForXMPOrientation = (
+        orientation: ExifReader.XmpTag["value"] | undefined,
+    ) => {
+        if (typeof orientation != "string") return false;
+        switch (orientation) {
+            case "5":
+            case "6":
+            case "7":
+            case "8":
+                return true;
+            default:
+                return false;
+        }
+    };
+
     // 1. Use the width and height from the file itself (e.g. JPEG data).
 
     let wh =
@@ -388,7 +424,14 @@ const parseDimensions = (tags: RawExifTags) => {
         ) ??
         pair(tags.riff?.ImageWidth?.value, tags.riff?.ImageHeight?.value);
     if (wh) {
-        return wh;
+        // The dimensions read from the file headers can still correspond to
+        // the un-rotated pixel matrix. For orientations 5-8, we need to swap
+        // them to represent the display dimensions used by masonry.
+        const shouldSwap =
+            shouldSwapForExifOrientation(tags.exif?.Orientation?.value) ||
+            (tags.exif?.Orientation?.value == undefined &&
+                shouldSwapForXMPOrientation(tags.xmp?.Orientation?.value));
+        return shouldSwap ? { width: wh.height, height: wh.width } : wh;
     }
 
     // 2. Exif dimensions, taking Orientation also into account if needed.
@@ -417,16 +460,9 @@ const parseDimensions = (tags: RawExifTags) => {
         //
         // Ref: https://exiftool.org/TagNames/EXIF.html
 
-        let swap = false;
-
-        switch (tags.exif?.Orientation?.value) {
-            case 5:
-            case 6:
-            case 7:
-            case 8:
-                swap = true;
-                break;
-        }
+        const swap = shouldSwapForExifOrientation(
+            tags.exif?.Orientation?.value,
+        );
 
         return swap ? { width: wh.height, height: wh.width } : wh;
     }
@@ -449,15 +485,7 @@ const parseDimensions = (tags: RawExifTags) => {
         //
         // Ref: https://exiftool.org/TagNames/XMP.html
 
-        let swap = false;
-
-        switch (tags.xmp?.Orientation?.value) {
-            case "5":
-            case "6":
-            case "7":
-            case "8":
-                swap = true;
-        }
+        const swap = shouldSwapForXMPOrientation(tags.xmp?.Orientation?.value);
 
         return swap ? { width: wh.height, height: wh.width } : wh;
     }
@@ -604,6 +632,15 @@ export const tagNumericValue = (
 ) => {
     const v = tag.value;
     return Array.isArray(v) ? (v[0] ?? 0) / (v[1] ?? 1) : v;
+};
+
+const parseCamera = (tags: RawExifTags) => {
+    const makeDescription = tags.exif?.Make?.description;
+    const modelDescription = tags.exif?.Model?.description;
+    const make = makeDescription?.trim();
+    const model = modelDescription?.trim();
+    if (!make && !model) return undefined;
+    return { make, model };
 };
 
 /**

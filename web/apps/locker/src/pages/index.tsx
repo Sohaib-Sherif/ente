@@ -1,26 +1,11 @@
-import { Stack, Typography } from "@mui/material";
-import { EnteLogo } from "ente-base/components/EnteLogo";
-import React from "react";
+import { LoadingIndicator } from "ente-base/components/loaders";
+import { useRouter } from "next/router";
+import React, { useEffect } from "react";
 
 const Page: React.FC = () => {
-    return (
-        <Stack
-            sx={{
-                justifyContent: "center",
-                minHeight: "100vh",
-                gap: 2,
-                bgcolor: "accent.main",
-                color: "white",
-                textAlign: "center",
-            }}
-        >
-            <EnteLogo height={42} />
-            <Typography variant="h1" sx={{ fontWeight: "bold" }}>
-                Locker
-            </Typography>
-            <Typography variant="small">— Coming soon —</Typography>
-        </Stack>
-    );
+    const router = useRouter();
+    useEffect(() => void router.replace("/login"), [router]);
+    return <LoadingIndicator />;
 };
 
 export default Page;

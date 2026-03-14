@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useSyncExternalStore } from "react";
 
 /**
  * An object that keeps track of progress of a user-initiated download of a set
@@ -20,6 +20,10 @@ export interface SaveGroup {
      * A randomly generated unique identifier of this set of saves.
      */
     id: number;
+    /**
+     * A callback to retry the download that created this save group.
+     */
+    retry?: () => void;
     /**
      * The user visible title of the save group.
      *
@@ -69,6 +73,31 @@ export interface SaveGroup {
      * An {@link AbortController} that can be used to cancel the save.
      */
     canceller: AbortController;
+    /**
+     * The reason for the failure, if any.
+     *
+     * This is used to show a more specific error message to the user.
+     * - "network_offline": The network went offline during download
+     * - "file_error": One or more individual files failed to download
+     * - undefined: No specific reason (generic error)
+     */
+    failureReason?: "network_offline" | "file_error";
+    /**
+     * `true` when we expect the ZIP download to span multiple parts, so part
+     * numbers should be shown from the first part.
+     */
+    includeZipNumber?: boolean;
+    /**
+     * `true` when the ZIP file is being downloaded from memory to the user's
+     * device. This is only relevant for web downloads where files are first
+     * collected into a ZIP in memory, then saved to the device.
+     */
+    isDownloadingZip?: boolean;
+    /**
+     * The current ZIP part number being processed. Only relevant for web
+     * downloads where files are batched into multiple ZIP parts.
+     */
+    currentPart?: number;
 }
 
 /**
@@ -105,7 +134,9 @@ export type AddSaveGroup = (
         | "isHiddenCollectionSummary"
         | "downloadDirPath"
         | "total"
+        | "includeZipNumber"
         | "canceller"
+        | "retry"
     >,
 ) => UpdateSaveGroup;
 
@@ -131,33 +162,87 @@ export type UpdateSaveGroup = (
 export type RemoveSaveGroup = (saveGroup: SaveGroup) => void;
 
 /**
+ * Keep save groups outside the component tree so remounts can rehydrate
+ * in-progress downloads after route changes.
+ */
+type SaveGroupsListener = () => void;
+
+let saveGroupsSnapshot: SaveGroup[] = [];
+const listeners = new Set<SaveGroupsListener>();
+
+// Notify subscribers after the snapshot changes.
+const emitChange = () => {
+    for (const listener of listeners) listener();
+};
+
+// Return the current snapshot for external-store consumers.
+const getSnapshot = () => saveGroupsSnapshot;
+
+// Register a listener and return its unsubscribe cleanup.
+const subscribe = (listener: SaveGroupsListener) => {
+    listeners.add(listener);
+    return () => {
+        listeners.delete(listener);
+    };
+};
+
+const setSaveGroupsSnapshot = (
+    next: SaveGroup[] | ((currentSaveGroups: SaveGroup[]) => SaveGroup[]),
+) => {
+    saveGroupsSnapshot =
+        typeof next == "function" ? next(saveGroupsSnapshot) : next;
+    emitChange();
+};
+
+const addSaveGroup: AddSaveGroup = (saveGroup) => {
+    const id = Math.random();
+    setSaveGroupsSnapshot((groups) => [
+        ...groups,
+        { ...saveGroup, id, success: 0, failed: 0 },
+    ]);
+
+    return (tx: (group: SaveGroup) => SaveGroup) => {
+        setSaveGroupsSnapshot((groups) =>
+            groups.map((g) => (g.id == id ? tx(g) : g)),
+        );
+    };
+};
+
+const removeSaveGroup: RemoveSaveGroup = ({ id }) =>
+    setSaveGroupsSnapshot((groups) => groups.filter((g) => g.id != id));
+
+export const resetSaveGroups = () => {
+    if (!saveGroupsSnapshot.length) return;
+
+    saveGroupsSnapshot = [];
+    emitChange();
+};
+
+/**
  * A custom React hook that manages a list of active {@link SaveGroup}s, and
  * provides functions to add and remove entries to the list.
  */
 export const useSaveGroups = () => {
-    const [saveGroups, setSaveGroups] = useState<SaveGroup[]>([]);
-
-    const handleAddSaveGroup: AddSaveGroup = useCallback((saveGroup) => {
-        const id = Math.random();
-        setSaveGroups((groups) => [
-            ...groups,
-            { ...saveGroup, id, success: 0, failed: 0 },
-        ]);
-        return (tx: (group: SaveGroup) => SaveGroup) => {
-            setSaveGroups((groups) =>
-                groups.map((g) => (g.id == id ? tx(g) : g)),
-            );
-        };
-    }, []);
-
-    const handleRemoveSaveGroup: RemoveSaveGroup = useCallback(
-        ({ id }) => setSaveGroups((groups) => groups.filter((g) => g.id != id)),
-        [],
+    const saveGroups = useSyncExternalStore(
+        subscribe,
+        getSnapshot,
+        getSnapshot,
     );
 
     return {
         saveGroups,
-        onAddSaveGroup: handleAddSaveGroup,
-        onRemoveSaveGroup: handleRemoveSaveGroup,
+        onAddSaveGroup: addSaveGroup,
+        onRemoveSaveGroup: removeSaveGroup,
     };
 };
+
+/**
+ * Return save-group actions without subscribing to progress updates.
+ *
+ * Use this in components that only need to initiate or dismiss downloads,
+ * otherwise every save progress update will re-render the caller.
+ */
+export const useSaveGroupsActions = () => ({
+    onAddSaveGroup: addSaveGroup,
+    onRemoveSaveGroup: removeSaveGroup,
+});

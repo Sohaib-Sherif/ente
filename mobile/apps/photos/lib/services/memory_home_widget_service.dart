@@ -31,12 +31,7 @@ class MemoryHomeWidgetService {
 
   // Properties
   final Logger _logger = Logger((MemoryHomeWidgetService).toString());
-  late final SharedPreferences _prefs;
-
-  // Initialization
-  void init(SharedPreferences prefs) {
-    _prefs = prefs;
-  }
+  SharedPreferences get _prefs => ServiceLocator.instance.prefs;
 
   // Preference getters and setters
   bool? hasLastYearMemoriesSelected() {
@@ -166,7 +161,7 @@ class MemoryHomeWidgetService {
   Future<bool> _hasAnyBlockers() async {
     // Check if first import is completed
     final hasCompletedFirstImport =
-        LocalSyncService.instance.hasCompletedFirstImport();
+        LocalSyncService.instance.hasCompletedFirstImportOrBypassed();
     if (!hasCompletedFirstImport) {
       return true;
     }
@@ -201,7 +196,7 @@ class MemoryHomeWidgetService {
   }
 
   Future<List<SmartMemory>> _getMemoriesForWidget() async {
-    final isMLEnabled = flagService.hasGrantedMLConsent;
+    final isMLEnabled = hasGrantedMLConsent;
     bool? smartMemoryValue = getMLMemoriesSelected();
     bool? lastYearValue = hasLastYearMemoriesSelected();
     bool? onThisDayValue = getOnThisDayMemoriesSelected();
@@ -280,7 +275,9 @@ class MemoryHomeWidgetService {
     }
 
     final bool isWidgetPresent = await countHomeWidgets() > 0;
-    final limit = isWidgetPresent ? MAX_MEMORIES_LIMIT : 5;
+    final limit = isWidgetPresent
+        ? HomeWidgetService.instance.getWidgetImageLimit()
+        : HomeWidgetService.WIDGET_IMAGE_LIMIT_MINIMAL;
     final maxAttempts = limit * 10;
 
     int renderedCount = 0;

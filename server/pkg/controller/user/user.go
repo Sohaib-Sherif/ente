@@ -1,6 +1,7 @@
 package user
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -235,17 +236,41 @@ func (c *UserController) GetTwoFactorStatus(userID int64) (bool, error) {
 }
 
 func (c *UserController) HandleAccountDeletion(ctx *gin.Context, userID int64, logger *logrus.Entry) (*ente.DeleteAccountResponse, error) {
+	return c.handleAccountDeletion(ctx, userID, logger, true)
+}
+
+func (c *UserController) HandleAutomatedAccountDeletion(ctx context.Context, userID int64, logger *logrus.Entry) (*ente.DeleteAccountResponse, error) {
+	return c.handleAccountDeletion(ctx, userID, logger, false)
+}
+
+func (c *UserController) ResetUserAccess(ctx context.Context, userID int64, logger *logrus.Entry) error {
+	logger.Info("remove locker and photos tokens for user")
+	if err := c.RemoveTokensForApps(userID, []ente.App{ente.Locker, ente.Photos}); err != nil {
+		return stacktrace.Propagate(err, "")
+	}
+
+	if err := c.CollectionCtrl.ResetUserSharingAccess(ctx, userID, logger); err != nil {
+		return stacktrace.Propagate(err, "")
+	}
+
+	if err := c.FamilyController.ResetUserFamilyAccess(ctx, userID, logger); err != nil {
+		return stacktrace.Propagate(err, "")
+	}
+	return nil
+}
+
+func (c *UserController) handleAccountDeletion(
+	ctx context.Context,
+	userID int64,
+	logger *logrus.Entry,
+	sendDeletionEmail bool,
+) (*ente.DeleteAccountResponse, error) {
 	isSubscriptionCancelled, err := c.BillingController.HandleAccountDeletion(ctx, userID, logger)
 	if err != nil {
 		return nil, stacktrace.Propagate(err, "")
 	}
 
-	err = c.CollectionCtrl.HandleAccountDeletion(ctx, userID, logger)
-	if err != nil {
-		return nil, stacktrace.Propagate(err, "")
-	}
-
-	err = c.FamilyController.HandleAccountDeletion(ctx, userID, logger)
+	err = c.ResetUserAccess(ctx, userID, logger)
 	if err != nil {
 		return nil, stacktrace.Propagate(err, "")
 	}
@@ -253,8 +278,8 @@ func (c *UserController) HandleAccountDeletion(ctx *gin.Context, userID int64, l
 	logger.Info("remove push tokens for user")
 	c.PushController.RemoveTokensForUser(userID)
 
-	logger.Info("remove active tokens for user")
-	err = c.UserAuthRepo.RemoveAllTokens(userID)
+	logger.Info("remove remaining active tokens for user")
+	err = c.RemoveAllTokens(userID)
 	if err != nil {
 		return nil, stacktrace.Propagate(err, "")
 	}
@@ -267,7 +292,12 @@ func (c *UserController) HandleAccountDeletion(ctx *gin.Context, userID int64, l
 	email := user.Email
 	// See also: Do not block on mailing list errors
 	go func() {
-		_ = c.MailingListsController.Unsubscribe(email)
+		if err := c.MailingListsController.Unsubscribe(email); err != nil {
+			logger.WithError(err).WithFields(logrus.Fields{
+				"user_id": userID,
+				"email":   email,
+			}).Error("mailing list unsubscribe failed")
+		}
 	}()
 
 	logger.Info("mark user as deleted")
@@ -282,7 +312,9 @@ func (c *UserController) HandleAccountDeletion(ctx *gin.Context, userID int64, l
 		return nil, stacktrace.Propagate(err, "")
 	}
 
-	go c.NotifyAccountDeletion(userID, email, isSubscriptionCancelled)
+	if sendDeletionEmail {
+		go c.NotifyAccountDeletion(userID, email, isSubscriptionCancelled)
+	}
 
 	return &ente.DeleteAccountResponse{
 		IsSubscriptionCancelled: isSubscriptionCancelled,
@@ -367,7 +399,7 @@ func (c *UserController) HandleAccountRecovery(ctx *gin.Context, req ente.Recove
 		}
 		return stacktrace.Propagate(keyErr, "keyAttributes missing? Account can not be recovered")
 	}
-	email := strings.ToLower(req.EmailID)
+	email := email.NormalizeEmail(req.EmailID)
 	encryptedEmail, err := crypto.Encrypt(email, c.SecretEncryptionKey)
 	if err != nil {
 		return stacktrace.Propagate(err, "")
@@ -426,7 +458,12 @@ func (c *UserController) createUser(email string, source *string) (int64, ente.S
 	// perform these actions async, and ignore errors that happen with them (a
 	// notification will be sent to Discord for those).
 	go func() {
-		_ = c.MailingListsController.Subscribe(email)
+		if err := c.MailingListsController.Subscribe(email); err != nil {
+			logrus.WithError(err).WithFields(logrus.Fields{
+				"user_id": userID,
+				"email":   email,
+			}).Error("mailing list subscribe failed")
+		}
 	}()
 	return userID, subscription, nil
 }

@@ -1,16 +1,20 @@
+import { Link05Icon, PinIcon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import ArchiveIcon from "@mui/icons-material/Archive";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import FavoriteRoundedIcon from "@mui/icons-material/FavoriteRounded";
-import LinkIcon from "@mui/icons-material/Link";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import PeopleIcon from "@mui/icons-material/People";
-import PushPinIcon from "@mui/icons-material/PushPin";
 import { Box, IconButton, Stack, Typography, styled } from "@mui/material";
 import { Overlay } from "ente-base/components/containers";
 import { FilledIconButton } from "ente-base/components/mui";
 import { Ellipsized2LineTypography } from "ente-base/components/Typography";
 import { useIsSmallWidth } from "ente-base/components/utils/hooks";
 import { CollectionsSortOptions } from "ente-new/photos/components/CollectionsSortOptions";
+import { StarIcon } from "ente-new/photos/components/icons/StarIcon";
+import {
+    PeopleSortOptions,
+    type PeopleSortBy,
+} from "ente-new/photos/components/PeopleSortOptions";
 import {
     BarItemTile,
     ItemCard,
@@ -39,8 +43,8 @@ import React, {
 import AutoSizer from "react-virtualized-auto-sizer";
 import {
     FixedSizeList,
-    type ListChildComponentProps,
     areEqual,
+    type ListChildComponentProps,
 } from "react-window";
 import { isMLSupported } from "../../services/ml";
 import type { GalleryBarMode } from "./reducer";
@@ -76,6 +80,11 @@ export interface GalleryBarImplProps {
      */
     onShowAllAlbums: () => void;
     /**
+     * Called when the user selects the option to show a modal with all the
+     * people.
+     */
+    onShowAllPeople: () => void;
+    /**
      * The scheme that should be used for sorting the collections in the bar.
      */
     collectionsSortBy: CollectionsSortBy;
@@ -83,6 +92,14 @@ export interface GalleryBarImplProps {
      * Called when the user changes the sorting scheme.
      */
     onChangeCollectionsSortBy: (by: CollectionsSortBy) => void;
+    /**
+     * The scheme that should be used for sorting the people.
+     */
+    peopleSortBy: PeopleSortBy;
+    /**
+     * Called when the user changes the people sorting scheme.
+     */
+    onChangePeopleSortBy: (by: PeopleSortBy) => void;
     /**
      * The list of people that should be shown in the bar.
      */
@@ -104,8 +121,11 @@ export const GalleryBarImpl: React.FC<GalleryBarImplProps> = ({
     activeCollectionID,
     onSelectCollectionID,
     onShowAllAlbums,
+    onShowAllPeople,
     collectionsSortBy,
     onChangeCollectionsSortBy,
+    peopleSortBy,
+    onChangePeopleSortBy,
     people,
     activePerson,
     onSelectPerson,
@@ -222,31 +242,46 @@ export const GalleryBarImpl: React.FC<GalleryBarImplProps> = ({
             direction="row"
             sx={{ alignItems: "center", gap: 1, minHeight: "64px" }}
         >
-            {mode != "people" && (
-                <>
-                    <CollectionsSortOptions
-                        activeSortBy={collectionsSortBy}
-                        onChangeSortBy={onChangeCollectionsSortBy}
-                        transparentTriggerButtonBackground
-                    />
-                    <IconButton onClick={onShowAllAlbums}>
-                        <ExpandMoreIcon />
-                    </IconButton>
-                </>
+            {mode != "people" ? (
+                <CollectionsSortOptions
+                    activeSortBy={collectionsSortBy}
+                    onChangeSortBy={onChangeCollectionsSortBy}
+                    transparentTriggerButtonBackground
+                />
+            ) : (
+                <PeopleSortOptions
+                    activeSortBy={peopleSortBy}
+                    onChangeSortBy={onChangePeopleSortBy}
+                    transparentTriggerButtonBackground
+                />
             )}
+            <IconButton
+                onClick={mode == "people" ? onShowAllPeople : onShowAllAlbums}
+            >
+                <ExpandMoreIcon />
+            </IconButton>
         </Stack>
     );
 
-    const controls2 = !isSmallWidth && mode != "people" && (
+    const controls2 = !isSmallWidth && (
         <Stack
             direction="row"
             sx={{ alignItems: "center", gap: 1, height: "64px" }}
         >
-            <CollectionsSortOptions
-                activeSortBy={collectionsSortBy}
-                onChangeSortBy={onChangeCollectionsSortBy}
-            />
-            <FilledIconButton onClick={onShowAllAlbums}>
+            {mode != "people" ? (
+                <CollectionsSortOptions
+                    activeSortBy={collectionsSortBy}
+                    onChangeSortBy={onChangeCollectionsSortBy}
+                />
+            ) : (
+                <PeopleSortOptions
+                    activeSortBy={peopleSortBy}
+                    onChangeSortBy={onChangePeopleSortBy}
+                />
+            )}
+            <FilledIconButton
+                onClick={mode == "people" ? onShowAllPeople : onShowAllAlbums}
+            >
                 <ExpandMoreIcon />
             </FilledIconButton>
         </Stack>
@@ -538,14 +573,14 @@ const CollectionBarCardIcon: React.FC<CollectionBarCardIconProps> = ({
     // will be true simultaneously even in the rarest of cases (a pinned and
     // shared album that is also archived), and there is enough space for 3.
     <CollectionBarCardIcon_>
-        {attributes.has("userFavorites") && <FavoriteRoundedIcon />}
-        {attributes.has("pinned") && (
+        {attributes.has("userFavorites") && <StarIcon fontSize="small" />}
+        {(attributes.has("pinned") || attributes.has("shareePinned")) && (
             // Need && to override the 20px set in the container.
-            <PushPinIcon sx={{ "&&": { fontSize: "18px" } }} />
+            <HugeiconsIcon icon={PinIcon} size={18} />
         )}
         {attributes.has("shared") &&
             (attributes.has("sharedOnlyViaLink") ? (
-                <LinkIcon />
+                <HugeiconsIcon icon={Link05Icon} size={20} />
             ) : (
                 <PeopleIcon />
             ))}
@@ -559,6 +594,18 @@ const CollectionBarCardIcon_ = styled(Overlay)`
     justify-content: flex-start;
     align-items: flex-end;
     gap: 4px;
+    & > .MuiSvgIcon-root {
+        font-size: 20px;
+    }
+`;
+
+const PersonPinnedIcon = styled(Overlay)`
+    padding: 4px;
+    display: flex;
+    justify-content: flex-start;
+    align-items: flex-end;
+    color: white;
+    z-index: 1;
     & > .MuiSvgIcon-root {
         font-size: 20px;
     }
@@ -592,6 +639,11 @@ const PersonCard: React.FC<PersonCardProps> = ({
             onClick={() => onSelectPerson(person.id)}
         >
             {person.name && <CardText>{person.name}</CardText>}
+            {person.isPinned && (
+                <PersonPinnedIcon>
+                    <HugeiconsIcon icon={PinIcon} size={18} color="white" />
+                </PersonPinnedIcon>
+            )}
         </ItemCard>
         {activePerson?.id === person.id && <ActiveIndicator />}
     </div>

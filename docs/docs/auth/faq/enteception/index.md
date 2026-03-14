@@ -5,26 +5,28 @@ description: Using Ente Auth to store 2FA for your Ente account
 
 # Enteception
 
-Your 2FA codes are in Ente Auth, but if you enable 2FA for your Ente account
-itself, where should the 2FA for your Ente account be stored?
+If you enable 2FA in Ente Photos, that also enables 2FA for the same Ente
+account in Ente Auth and Ente Locker, because all three use the same account.
+So if you store your Ente account's 2FA code inside Ente Auth, you can end up
+needing Ente Auth to log into Ente Auth.
 
 There are multiple answers, none of which are better or worse, they just depend
 on your situation and risk tolerance.
 
-If you are using the same account for both Ente Photos and Ente Auth and have
-enabled 2FA from the Ente Photos app, we recommend that you ensure you store
+We recommend that you ensure you store
 your recovery key in a safe place (writing it down on a paper is a good idea).
 This key can be used to bypass Ente 2FA in case you are locked out.
 
 Another option is to use a separate account for Ente Auth.
 
-Also, taking exporting the encrypted backup is also another good way to reduce
+Also, exporting the encrypted backup is another good way to reduce
 the risk (you can easily import the encrypted backup without signing in).
 
-Finally, we have on our roadmap some features like adding support for
-emergency/legacy-contacts, passkeys, and hardware security keys. Beyond other
-benefits, all of these would further reduce the risk of users getting locked out
-of their accounts.
+Ente also offers [Legacy](/photos/features/legacy/) (emergency contacts) and support for [Passkeys](/photos/features/passkeys). Both help reduce the risk of being locked out of your Ente account.
+
+[Legacy](/photos/features/legacy/) allows you to designate trusted contacts who can recover your account in case you are unavailable. The primary use case is to pass on your memories after your death, but it also helps recover your account in case you forget your password and recovery key. Trusted contacts can initiate account recovery, and if you do not block this within 30 days, they can reset the password and access your account.
+
+[Passkeys](/photos/features/passkeys) serve as a modern and secure alternative to traditional 2FA codes. Instead of entering a code, you can authenticate using biometric data, hardware security keys, or device-based authentication.
 
 ## Email verification for Ente Auth
 
@@ -43,7 +45,7 @@ warning when you try to enable email verification in the auth app:
 
 </div>
 
-The solution here are the same as the Ente-in-Ente case.
+The solutions here are the same as the Ente-in-Ente case.
 
 ## TL;DR;
 

@@ -52,6 +52,13 @@ configuration body.
 Use the `s3.hot_storage.primary` option if you'd like to set one of the other
 pre-defined buckets as the primary bucket.
 
+To enable replication after configuring all 3 storage buckets, set `replication.enabled` to `true` in [museum.yaml](https://github.com/ente-io/ente/blob/main/server/configurations/local.yaml):
+
+```yaml
+replication:
+    enabled: true
+```
+
 ### Bucket configuration
 
 The keys `b2-eu-cen` (primary storage), `wasabi-eu-central-2-v3` (secondary
@@ -63,11 +70,18 @@ It has no relation to Backblaze, Wasabi or Scaleway.
 Each bucket's endpoint, region, key and secret should be configured accordingly
 if using an external bucket.
 
-A sample configuration for `b2-eu-cen` is provided, which can be used for other
-2 buckets as well:
+If a bucket has SSL support enabled, set `s3.are_local_buckets` to `false`. Enable path-style URL by setting `s3.use_path_style_urls` to `true`.
+
+> [!NOTE]
+>
+> You can configure this for individual buckets over defining top-level configuration if you are using the latest server image (August 2025).
+
+A sample configuration for `b2-eu-cen` is provided, which can be used for other 2 buckets as well:
 
 ```yaml
 b2-eu-cen:
+    are_local_buckets: true
+    use_path_style_urls: true
     key: <key>
     secret: <secret>
     endpoint: localhost:3200
@@ -98,6 +112,14 @@ Use the content provided below for creating a `cors.json` file:
 
 You may have to change the `AllowedOrigins` to allow only certain origins (your
 Ente web apps and Museum) for security.
+
+> [!NOTE]
+>
+> Newer Ente builds include a `Content-MD5` header on upload requests (and `UPLOAD-URL`
+> when routing through the upload worker). If your provider requires an explicit
+> allow list instead of `["*"]`, make sure these headers are present in
+> `AllowedHeaders`, otherwise preflight checks will fail, and uploads will be
+> blocked.
 
 Assuming you have AWS CLI on your system and that you have configured it with
 your access key and secret, you can execute the below command to set bucket

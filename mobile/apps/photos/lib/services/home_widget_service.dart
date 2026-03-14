@@ -3,7 +3,6 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:home_widget/home_widget.dart' as hw;
-import 'package:home_widget/home_widget.dart';
 import 'package:logging/logging.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path_provider_foundation/path_provider_foundation.dart';
@@ -14,8 +13,7 @@ import 'package:photos/services/memory_home_widget_service.dart';
 import 'package:photos/services/people_home_widget_service.dart';
 import 'package:photos/services/smart_memories_service.dart';
 import 'package:photos/utils/thumbnail_util.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import "package:synchronized/synchronized.dart";
+import 'package:synchronized/synchronized.dart';
 
 enum WidgetStatus {
   // notSynced means the widget is not initialized or has no data
@@ -36,6 +34,8 @@ class HomeWidgetService {
   // Constants
   static const double THUMBNAIL_SIZE = 512.0;
   static const String WIDGET_DIRECTORY = 'home_widget';
+  static const int WIDGET_IMAGE_LIMIT_V1 = 50;
+  static const int WIDGET_IMAGE_LIMIT_MINIMAL = 5;
 
   // URI schemes for different widget types
   static const String MEMORY_WIDGET_SCHEME = 'memorywidget';
@@ -55,23 +55,26 @@ class HomeWidgetService {
 
   final Logger _logger = Logger((HomeWidgetService).toString());
   final computeLock = Lock();
+  bool _isAppGroupSet = false;
 
-  void init(SharedPreferences prefs) {
-    setAppGroupID(iOSGroupIDMemory);
-    _initializeWidgetServices(prefs);
+  Future<void> setAppGroup({String id = iOSGroupIDMemory}) async {
+    if (!Platform.isIOS || _isAppGroupSet) return;
+    _logger.info("Setting app group id");
+    await hw.HomeWidget.setAppGroupId(id).catchError(
+      (error) {
+        _logger.severe("Failed to set app group ID: $error");
+        return null;
+      },
+    );
+    _isAppGroupSet = true;
   }
 
-  void _initializeWidgetServices(SharedPreferences prefs) {
-    AlbumHomeWidgetService.instance.init(prefs);
-    PeopleHomeWidgetService.instance.init(prefs);
-    MemoryHomeWidgetService.instance.init(prefs);
-  }
-
-  void setAppGroupID(String id) {
-    hw.HomeWidget.setAppGroupId(id).ignore();
+  int getWidgetImageLimit() {
+    return WIDGET_IMAGE_LIMIT_V1;
   }
 
   Future<void> initHomeWidget([bool isBg = false]) async {
+    await setAppGroup();
     await AlbumHomeWidgetService.instance.initAlbumHomeWidget(isBg);
     await PeopleHomeWidgetService.instance.initPeopleHomeWidget();
     await MemoryHomeWidgetService.instance.initMemoryHomeWidget();
@@ -103,7 +106,7 @@ class HomeWidgetService {
     String title,
     String? mainKey,
   ) async {
-    final result = await _captureFile(file, key, title, mainKey);
+    final result = await _captureFileLegacy(file, key, title, mainKey);
     if (!result) {
       _logger.warning("Failed to capture file ${file.displayName}");
       return null;
@@ -128,11 +131,11 @@ class HomeWidgetService {
     return relevantWidgets.length;
   }
 
-  Future<List<HomeWidgetInfo>> getInstalledWidgets() async {
+  Future<List<hw.HomeWidgetInfo>> getInstalledWidgets() async {
     return await hw.HomeWidget.getInstalledWidgets();
   }
 
-  Future<bool> _captureFile(
+  Future<bool> _captureFileLegacy(
     EnteFile file,
     String key,
     String title,
@@ -218,7 +221,7 @@ class HomeWidgetService {
 
   Future<void> clearWidget(bool autoLogout) async {
     if (autoLogout) {
-      setAppGroupID(iOSGroupIDMemory);
+      await setAppGroup();
     }
 
     await Future.wait([

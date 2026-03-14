@@ -78,10 +78,12 @@ const ChangelogContent: React.FC = () => {
 
     return (
         <Stack sx={{ gap: 2, mb: 1 }}>
-            <Typography variant="h6">{ut("Light mode ✨")}</Typography>
+            <Typography variant="h6">
+                {ut("Masonry layout, Quick links, and more")}
+            </Typography>
             <Typography sx={{ color: "text.muted" }}>
                 {ut(
-                    "The much requested light mode is here. The app will automatically switch between the light and dark theme based on your OS settings. You can manually override this is Preferences.",
+                    "Masonry layout for public albums. Quick links with full viewer experience for single-photo/video links. Update album cover. Public album improvements. Catalan language support.",
                 )}
             </Typography>
         </Stack>

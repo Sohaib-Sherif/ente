@@ -62,7 +62,8 @@ above and `ENTE_S3_B2_EU_CEN_ENDPOINT` overrides `s3.b2-eu-cen.endpoint`.
 
 ### App Endpoints
 
-The web apps for Ente (Auth, Cast, Albums) use different endpoints.
+The web apps for Ente (Accounts, Cast, Albums, Share, Paste, Embed) use
+different endpoints.
 
 These endpoints are configurable in `museum.yaml` under the apps.\* section.
 
@@ -73,7 +74,10 @@ used for Compose and quickstart for ease of use.)
 | Variable             | Description                                             | Default                    |
 | -------------------- | ------------------------------------------------------- | -------------------------- |
 | `apps.public-albums` | Albums app base endpoint for public sharing             | `https://albums.ente.io`   |
+| `apps.public-locker` | Public Locker (share) app base endpoint                 | `https://share.ente.io`    |
+| `apps.public-paste`  | Ente Paste app base endpoint                            | `https://paste.ente.io`    |
 | `apps.cast`          | Cast app base endpoint                                  | `https://cast.ente.io`     |
+| `apps.embed-albums`  | Embed app base endpoint for embedded sharing            | `https://embed.ente.io`    |
 | `apps.accounts`      | Accounts app base endpoint (used for passkey-based 2FA) | `https://accounts.ente.io` |
 
 ### Database
@@ -96,8 +100,8 @@ provide correct credentials for proper connectivity within Museum.
 The `s3` section within `museum.yaml` is by default configured to use local
 MinIO buckets when using `quickstart.sh` or Docker Compose.
 
-If you wish to use an external S3 provider, you can edit the configuration with
-your provider's credentials, and set `s3.are_local_buckets` to `false`.
+If you wish to use an external S3 provider with SSL, you can edit the configuration with
+your provider's credentials, and set `s3.are_local_buckets` to `false`. Additionally, you can configure this for specific buckets in the corresponding bucket sections in the Compose file.
 
 If you are using default MinIO, it is accessible at port `3200`. Web Console can
 be accessed by enabling port `3201` in the Compose file.
@@ -111,11 +115,11 @@ and [troubleshooting](/self-hosting/troubleshooting/uploads) sections.
 
 | Variable                               | Description                                  | Default |
 | -------------------------------------- | -------------------------------------------- | ------- |
-| `s3.b2-eu-cen`                         | Primary hot storage S3 config                |         |
+| `s3.b2-eu-cen`                         | Primary hot storage bucket configuration     |         |
 | `s3.wasabi-eu-central-2-v3.compliance` | Whether to disable compliance lock on delete | `true`  |
-| `s3.scw-eu-fr-v3`                      | Optional secondary S3 config                 |         |
-| `s3.wasabi-eu-central-2-derived`       | Derived data storage                         |         |
-| `s3.are_local_buckets`                 | Use local MinIO-compatible storage           | `false` |
+| `s3.scw-eu-fr-v3`                      | Cold storage bucket configuration            |         |
+| `s3.wasabi-eu-central-2-v3`            | Secondary hot storage configuration          |         |
+| `s3.are_local_buckets`                 |                                              | `true`  |
 | `s3.use_path_style_urls`               | Enable path-style URLs for MinIO             | `false` |
 
 ### Encryption Keys
@@ -171,6 +175,8 @@ smtp:
     email:
     # Optional name for sender
     sender-name:
+    # Optional encryption
+    encryption:
 ```
 
 | Variable           | Description                  | Default |
@@ -181,6 +187,7 @@ smtp:
 | `smtp.password`    | SMTP auth password           |         |
 | `smtp.email`       | Sender email address         |         |
 | `smtp.sender-name` | Custom name for email sender |         |
+| `smtp.encryption`  | Encryption method (tls, ssl) |         |
 | `transmail.key`    | Zeptomail API key            |         |
 
 ### WebAuthn Passkey Support
@@ -192,17 +199,18 @@ smtp:
 
 ### Internal
 
-| Variable                                     | Description                                   | Default |
-| -------------------------------------------- | --------------------------------------------- | ------- |
-| `internal.silent`                            | Suppress external effects (e.g. email alerts) | `false` |
-| `internal.health-check-url`                  | External healthcheck URL                      |         |
-| `internal.hardcoded-ott`                     | Predefined OTPs for testing                   |         |
-| `internal.hardcoded-ott.emails`              | E-mail addresses with hardcoded OTTs          | `[]`    |
-| `internal.hardcoded-ott.local-domain-suffix` | Suffix for which hardcoded OTT is to be used  |         |
-| `internal.hardcoded-ott.local-domain-value`  | Hardcoded OTT value for the above suffix      |         |
-| `internal.admins`                            | List of admin user IDs                        | `[]`    |
-| `internal.admin`                             | Single admin user ID                          |         |
-| `internal.disable-registration`              | Disable user registration                     | `false` |
+| Variable                                     | Description                                                                                                                                                             | Default |
+| -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| `internal.silent`                            | Suppress external effects (e.g. email alerts)                                                                                                                           | `false` |
+| `internal.trusted-client-ip-header`          | Request header trusted by gin’s `TrustedPlatform` when the server runs behind a proxy (leave empty to use gin’s default order: X-Forwarded-For, X-Real-IP, remote addr) |         |
+| `internal.health-check-url`                  | External healthcheck URL                                                                                                                                                |         |
+| `internal.hardcoded-ott`                     | Predefined OTPs for testing                                                                                                                                             |         |
+| `internal.hardcoded-ott.emails`              | E-mail addresses with hardcoded OTTs                                                                                                                                    | `[]`    |
+| `internal.hardcoded-ott.local-domain-suffix` | Suffix for which hardcoded OTT is to be used                                                                                                                            |         |
+| `internal.hardcoded-ott.local-domain-value`  | Hardcoded OTT value for the above suffix                                                                                                                                |         |
+| `internal.admins`                            | List of admin user IDs                                                                                                                                                  | `[]`    |
+| `internal.admin`                             | Single admin user ID                                                                                                                                                    |         |
+| `internal.disable-registration`              | Disable user registration                                                                                                                                               | `false` |
 
 ### Replication
 

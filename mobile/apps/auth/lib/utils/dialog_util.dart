@@ -4,10 +4,8 @@ import 'dart:math';
 import 'package:confetti/confetti.dart';
 import "package:dio/dio.dart";
 import 'package:ente_auth/l10n/l10n.dart';
-import 'package:ente_auth/models/typedefs.dart';
 import 'package:ente_auth/theme/colors.dart';
 import 'package:ente_auth/ui/common/loading_widget.dart';
-import 'package:ente_auth/ui/common/progress_dialog.dart';
 import 'package:ente_auth/ui/components/action_sheet_widget.dart';
 import 'package:ente_auth/ui/components/buttons/button_widget.dart';
 import 'package:ente_auth/ui/components/components_constants.dart';
@@ -16,6 +14,8 @@ import 'package:ente_auth/ui/components/models/button_result.dart';
 import 'package:ente_auth/ui/components/models/button_type.dart';
 import 'package:ente_auth/utils/email_util.dart';
 import 'package:ente_auth/utils/platform_util.dart';
+import 'package:ente_base/typedefs.dart';
+import 'package:ente_ui/components/progress_dialog.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
@@ -40,7 +40,11 @@ Future<ButtonResult?> showErrorDialog(
         isInAlert: true,
         buttonAction: ButtonAction.first,
         onTap: () async {
-          await openSupportPage(body, null);
+          await sendEmail(
+            context,
+            to: "support@ente.io",
+            body: body,
+          );
         },
       ),
       const ButtonWidget(
@@ -179,7 +183,7 @@ Future<ButtonResult?> showGenericErrorDialog({
             PlatformUtil.openWebView(
               context,
               context.l10n.faq,
-              "https://help.ente.io/auth/troubleshooting/windows-login",
+              "https://ente.io/help/auth/troubleshooting/windows-login",
             ).ignore();
           },
         ),
@@ -414,6 +418,7 @@ Future<dynamic> showTextInputDialog(
   bool alwaysShowSuccessState = false,
   bool isPasswordInput = false,
   bool useRootNavigator = false,
+  VoidCallback? onCancel,
 }) {
   return showDialog(
     barrierColor: backdropFaintDark,

@@ -1,6 +1,7 @@
 package user
 
 import (
+	"context"
 	"database/sql"
 	"encoding/base64"
 	"errors"
@@ -37,6 +38,14 @@ type HardCodedOTT struct {
 	LocalDomainSuffix string
 	LocalDomainValue  string
 }
+
+type signUpState int
+
+const (
+	signUpStateNoAccount signUpState = iota
+	signUpStateIncomplete
+	signUpStateComplete
+)
 
 func ReadHardCodedOTTFromConfig() HardCodedOTT {
 	emails := make([]HardCodedOTTEmail, 0)
@@ -82,7 +91,7 @@ func hardcodedOTTForEmail(hardCodedOTT HardCodedOTT, email string) string {
 }
 
 // SendEmailOTT generates and sends an OTT to the provided email address
-func (c *UserController) SendEmailOTT(context *gin.Context, email string, purpose string) error {
+func (c *UserController) SendEmailOTT(context *gin.Context, email string, purpose string, mobile bool) error {
 	if err := c.validateSendOTT(context, email, purpose); err != nil {
 		return err
 	}
@@ -105,21 +114,21 @@ func (c *UserController) SendEmailOTT(context *gin.Context, email string, purpos
 		return stacktrace.Propagate(err, "")
 	}
 	// check if user has already requested for more than 10 codes in last 10mins
-	otts, _ := c.UserAuthRepo.GetValidOTTs(emailHash, auth.GetApp(context))
+	app := auth.GetApp(context)
+	otts, _ := c.UserAuthRepo.GetValidOTTs(emailHash, app)
 	if len(otts) >= OTTActiveCodeLimit {
 		msg := "Too many ott requests in a short duration"
 		go c.DiscordController.NotifyPotentialAbuse(msg)
 		return stacktrace.Propagate(ente.ErrTooManyBadRequest, msg)
 	}
 
-	err = c.UserAuthRepo.AddOTT(emailHash, auth.GetApp(context), ott, time.Microseconds()+OTTValidityDurationInMicroSeconds)
+	err = c.UserAuthRepo.AddOTT(emailHash, app, ott, time.Microseconds()+OTTValidityDurationInMicroSeconds)
 	if !hasHardcodedOTT {
 		// ignore error for AddOTT for hardcode OTT. This is to avoid error when unique OTT check fails at db layer
 		if err != nil {
 			return stacktrace.Propagate(err, "")
 		}
-		log.Info("Added ott for " + emailHash + ": " + ott)
-		err = emailOTT(email, ott, purpose)
+		err = emailOTT(app, email, ott, purpose, mobile)
 		if err != nil {
 			return stacktrace.Propagate(err, "")
 		}
@@ -148,20 +157,23 @@ func (c *UserController) validateSendOTT(ctx *gin.Context, email string, purpose
 			return err
 		}
 	}
-	isSignUpComplete, err := c.isSignUpComplete(email)
+	signupState, err := c.getSignUpState(email)
 	if err != nil {
 		return stacktrace.Propagate(err, "")
 	}
-	if purpose == ente.SignUpOTTPurpose && viper.GetBool("internal.disable-registration") && !isSignUpComplete {
+	if purpose == ente.SignUpOTTPurpose && viper.GetBool("internal.disable-registration") && signupState != signUpStateComplete {
 		return stacktrace.Propagate(ente.ErrPermissionDenied, "registration is disabled")
 	}
 	//
 	var registrationErr error
-	if purpose == ente.SignUpOTTPurpose && isSignUpComplete {
+	if purpose == ente.SignUpOTTPurpose && signupState == signUpStateComplete {
 		registrationErr = stacktrace.Propagate(ente.ErrUserAlreadyRegistered, "user has already completed sign up process")
 	}
-	if purpose == ente.LoginOTTPurpose && !isSignUpComplete {
-		registrationErr = stacktrace.Propagate(ente.ErrUserNotRegistered, "user has not completed sign up process")
+	if purpose == ente.LoginOTTPurpose && signupState == signUpStateNoAccount {
+		registrationErr = stacktrace.Propagate(ente.ErrUserNotRegistered, "user account does not exist")
+	}
+	if purpose == ente.LoginOTTPurpose && signupState == signUpStateIncomplete {
+		registrationErr = stacktrace.Propagate(ente.ErrUserSignupIncomplete, "user has not completed sign up process")
 	}
 	// if no registration error, return
 	if registrationErr == nil {
@@ -178,24 +190,24 @@ func (c *UserController) validateSendOTT(ctx *gin.Context, email string, purpose
 	return registrationErr
 }
 
-// isSignUpComplete checks if the user has completed the entire signup process.
-// Sign up is considered complete if the user has verified their email address and their key attributes are set.
-func (c *UserController) isSignUpComplete(email string) (bool, error) {
+// getSignUpState returns the signup state for an email.
+// Signup is complete only when both email and key attributes exist.
+func (c *UserController) getSignUpState(email string) (signUpState, error) {
 	userID, err := c.UserRepo.GetUserIDWithEmail(email)
 	if err != nil && errors.Is(err, sql.ErrNoRows) {
-		return false, nil
+		return signUpStateNoAccount, nil
 	}
 	if err != nil {
-		return false, stacktrace.Propagate(err, "")
+		return signUpStateNoAccount, stacktrace.Propagate(err, "")
 	}
 	_, keyErr := c.UserRepo.GetKeyAttributes(userID)
 	if keyErr != nil && errors.Is(keyErr, sql.ErrNoRows) {
-		return false, nil
+		return signUpStateIncomplete, nil
 	}
 	if keyErr != nil {
-		return false, stacktrace.Propagate(keyErr, "")
+		return signUpStateNoAccount, stacktrace.Propagate(keyErr, "")
 	}
-	return true, nil
+	return signUpStateComplete, nil
 }
 
 func (c *UserController) AddAdminOtt(req ente.AdminOttReq) error {
@@ -232,7 +244,6 @@ func (c *UserController) verifyEmailOtt(context *gin.Context, email string, ott 
 	}
 
 	otts, err := c.UserAuthRepo.GetValidOTTs(emailHash, app)
-	log.Infof("Valid ott (app: %s) for %s are %s", app, emailHash, strings.Join(otts, ","))
 	if err != nil {
 		return stacktrace.Propagate(err, "")
 	}
@@ -261,7 +272,7 @@ func (c *UserController) verifyEmailOtt(context *gin.Context, email string, ott 
 // VerifyEmail validates that the OTT provided in the request is valid for the
 // provided email address and if yes returns the users credentials
 func (c *UserController) VerifyEmail(context *gin.Context, request ente.EmailVerificationRequest) (ente.EmailAuthorizationResponse, error) {
-	email := strings.ToLower(request.Email)
+	email := emailUtil.NormalizeEmail(request.Email)
 	err := c.verifyEmailOtt(context, email, request.OTT)
 	if err != nil {
 		return ente.EmailAuthorizationResponse{}, stacktrace.Propagate(err, "")
@@ -272,7 +283,7 @@ func (c *UserController) VerifyEmail(context *gin.Context, request ente.EmailVer
 // ChangeEmail validates that the OTT provided in the request is valid for the
 // provided email address and if yes updates the user's existing email address
 func (c *UserController) ChangeEmail(ctx *gin.Context, request ente.EmailVerificationRequest) error {
-	email := strings.ToLower(request.Email)
+	email := emailUtil.NormalizeEmail(request.Email)
 	err := c.verifyEmailOtt(ctx, email, request.OTT)
 	if err != nil {
 		return stacktrace.Propagate(err, "")
@@ -283,6 +294,8 @@ func (c *UserController) ChangeEmail(ctx *gin.Context, request ente.EmailVerific
 
 // UpdateEmail updates the email address of the user with the provided userID
 func (c *UserController) UpdateEmail(ctx *gin.Context, userID int64, email string) error {
+	email = emailUtil.NormalizeEmail(email)
+
 	_, err := c.UserRepo.GetUserIDWithEmail(email)
 	if err == nil {
 		// email already owned by a user
@@ -330,8 +343,18 @@ func (c *UserController) UpdateEmail(ctx *gin.Context, userID int64, email strin
 	//
 	// See also: Do not block on mailing list errors
 	go func() {
-		_ = c.MailingListsController.Unsubscribe(oldEmail)
-		_ = c.MailingListsController.Subscribe(email)
+		if err := c.MailingListsController.Unsubscribe(oldEmail); err != nil {
+			log.WithError(err).WithFields(log.Fields{
+				"user_id": userID,
+				"email":   oldEmail,
+			}).Error("mailing list unsubscribe failed")
+		}
+		if err := c.MailingListsController.Subscribe(email); err != nil {
+			log.WithError(err).WithFields(log.Fields{
+				"user_id": userID,
+				"email":   email,
+			}).Error("mailing list subscribe failed")
+		}
 	}()
 
 	return nil
@@ -354,10 +377,17 @@ func (c *UserController) GetActiveSessions(context *gin.Context, userID int64) (
 	return tokens, nil
 }
 
-func (c *UserController) AddTokenAndNotify(userID int64, app ente.App, token string, ip string, userAgent string) error {
+func (c *UserController) AddTokenAndNotify(ctx context.Context, userID int64, app ente.App, token string, ip string, userAgent string) error {
 	err := c.UserAuthRepo.AddToken(userID, app, token, ip, userAgent)
 	if err != nil {
 		return stacktrace.Propagate(err, "failed to insert token")
+	}
+
+	isEmailMFAEnabled, emailMFAErr := c.UserAuthRepo.IsEmailMFAEnabled(ctx, userID)
+	if emailMFAErr != nil {
+		log.WithError(emailMFAErr).WithField("user_id", userID).Warn("Failed to fetch email MFA status")
+	} else if *isEmailMFAEnabled {
+		return nil
 	}
 
 	go func() {
@@ -376,19 +406,74 @@ func (c *UserController) AddTokenAndNotify(userID int64, app ente.App, token str
 	return nil
 }
 
+// RemoveTokensForApps marks the given app tokens as deleted and evicts them from the auth cache.
+func (c *UserController) RemoveTokensForApps(userID int64, apps []ente.App) error {
+	if len(apps) == 0 {
+		return nil
+	}
+	if err := c.deleteActiveTokenCacheEntriesForApps(userID, apps); err != nil {
+		return err
+	}
+	if err := c.UserAuthRepo.RemoveTokensForApps(userID, apps); err != nil {
+		return stacktrace.Propagate(err, "failed to remove tokens")
+	}
+	return nil
+}
+
+func (c *UserController) RemoveAllTokens(userID int64) error {
+	apps, err := c.UserAuthRepo.GetAppsForUser(userID)
+	if err != nil {
+		return stacktrace.Propagate(err, "failed to get user apps")
+	}
+	if err = c.deleteActiveTokenCacheEntriesForApps(userID, apps); err != nil {
+		return err
+	}
+	if err = c.UserAuthRepo.RemoveAllTokens(userID); err != nil {
+		return stacktrace.Propagate(err, "failed to remove tokens")
+	}
+	return nil
+}
+
 // TerminateSession removes the token for a user from cache and database
 func (c *UserController) TerminateSession(userID int64, token string) error {
-	c.Cache.Delete(fmt.Sprintf("%s:%s", ente.Photos, token))
-	c.Cache.Delete(fmt.Sprintf("%s:%s", ente.Auth, token))
+	apps, err := c.UserAuthRepo.GetAppsForUser(userID)
+	if err != nil {
+		return stacktrace.Propagate(err, "failed to get user apps")
+	}
+	for _, app := range apps {
+		c.Cache.Delete(fmt.Sprintf("%s:%s", app, token))
+	}
 	return stacktrace.Propagate(c.UserAuthRepo.RemoveToken(userID, token), "")
 }
 
-func emailOTT(to string, ott string, purpose string) error {
+// Auth middleware trusts cached app:token entries for up to a minute, so token
+// revocation needs to evict those entries as well to take effect immediately.
+func (c *UserController) deleteActiveTokenCacheEntriesForApps(userID int64, apps []ente.App) error {
+	if len(apps) == 0 {
+		return nil
+	}
+	for _, app := range apps {
+		sessions, err := c.UserAuthRepo.GetActiveSessions(userID, app)
+		if err != nil {
+			return stacktrace.Propagate(err, "failed to get active sessions")
+		}
+		for _, session := range sessions {
+			c.Cache.Delete(fmt.Sprintf("%s:%s", app, session.Token))
+		}
+	}
+	return nil
+}
+
+func emailOTT(app ente.App, to string, ott string, purpose string, mobile bool) error {
 	var templateName string
 	if purpose == ente.ChangeEmailOTTPurpose {
 		templateName = ente.ChangeEmailOTTTemplate
 	} else {
-		templateName = ente.OTTTemplate
+		if mobile && app == ente.Photos {
+			templateName = ente.OTTMobileTemplate
+		} else {
+			templateName = ente.OTTTemplate
+		}
 	}
 	subject := fmt.Sprintf("Verification code: %s", ott)
 	err := emailUtil.SendTemplatedEmail([]string{to}, "Ente", "verify@ente.io",
@@ -405,6 +490,7 @@ func emailOTT(to string, ott string, purpose string) error {
 // source indicates where the user came from.  It can be nil.
 func (c *UserController) onVerificationSuccess(context *gin.Context, email string, source *string) (ente.EmailAuthorizationResponse, error) {
 	isTwoFactorEnabled := false
+	app := auth.GetApp(context)
 
 	userID, err := c.UserRepo.GetUserIDWithEmail(email)
 	if err != nil {
@@ -470,7 +556,7 @@ func (c *UserController) onVerificationSuccess(context *gin.Context, email strin
 		if errors.Is(err, sql.ErrNoRows) {
 			// user creation is pending on key attributes set based on the password.
 			// No need to send login notification
-			err = c.UserAuthRepo.AddToken(userID, auth.GetApp(context), token,
+			err = c.UserAuthRepo.AddToken(userID, app, token,
 				network.GetClientIP(context), context.Request.UserAgent())
 			if err != nil {
 				return ente.EmailAuthorizationResponse{}, stacktrace.Propagate(err, "")
@@ -480,11 +566,12 @@ func (c *UserController) onVerificationSuccess(context *gin.Context, email strin
 			return ente.EmailAuthorizationResponse{}, stacktrace.Propagate(err, "")
 		}
 	}
-	encryptedToken, err := crypto.GetEncryptedToken(token, keyAttributes.PublicKey)
+	var encryptedToken string
+	encryptedToken, err = crypto.GetEncryptedTokenNative(token, keyAttributes.PublicKey)
 	if err != nil {
 		return ente.EmailAuthorizationResponse{}, stacktrace.Propagate(err, "")
 	}
-	err = c.AddTokenAndNotify(userID, auth.GetApp(context), token,
+	err = c.AddTokenAndNotify(context, userID, app, token,
 		network.GetClientIP(context), context.Request.UserAgent())
 	if err != nil {
 		return ente.EmailAuthorizationResponse{}, stacktrace.Propagate(err, "")
@@ -497,12 +584,12 @@ func (c *UserController) onVerificationSuccess(context *gin.Context, email strin
 
 }
 
-func convertStringToBytes(s string) []byte {
+func convertStringToBytes(s string) ([]byte, error) {
 	b, err := base64.StdEncoding.DecodeString(s)
 	if err != nil {
-		panic(fmt.Sprintf("failed to base64dDecode string %s", s))
+		return nil, ente.NewBadRequestWithMessage("invalid base64 encoding")
 	}
-	return b
+	return b, nil
 }
 
 func convertBytesToString(b []byte) string {

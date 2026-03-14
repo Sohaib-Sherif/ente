@@ -1,30 +1,28 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:ente_accounts/models/user_details.dart';
+import 'package:ente_accounts/pages/request_pwd_verification_page.dart';
+import 'package:ente_accounts/pages/sessions_page.dart';
+import 'package:ente_accounts/services/passkey_service.dart';
+import 'package:ente_accounts/services/user_service.dart';
 import 'package:ente_auth/core/configuration.dart';
 import 'package:ente_auth/l10n/l10n.dart';
-import 'package:ente_auth/models/user_details.dart';
-import 'package:ente_auth/services/local_authentication_service.dart';
-import 'package:ente_auth/services/passkey_service.dart';
-import 'package:ente_auth/services/user_service.dart';
 import 'package:ente_auth/theme/ente_theme.dart';
-import 'package:ente_auth/ui/account/request_pwd_verification_page.dart';
-import 'package:ente_auth/ui/account/sessions_page.dart';
 import 'package:ente_auth/ui/components/buttons/button_widget.dart';
 import 'package:ente_auth/ui/components/captioned_text_widget.dart';
 import 'package:ente_auth/ui/components/expandable_menu_item_widget.dart';
 import 'package:ente_auth/ui/components/menu_item_widget.dart';
 import 'package:ente_auth/ui/components/models/button_result.dart';
-import 'package:ente_auth/ui/components/toggle_switch_widget.dart';
 import 'package:ente_auth/ui/settings/common_settings.dart';
-import 'package:ente_auth/ui/settings/lock_screen/lock_screen_options.dart';
-import 'package:ente_auth/utils/auth_util.dart';
 import 'package:ente_auth/utils/dialog_util.dart';
-import 'package:ente_auth/utils/lock_screen_settings.dart';
 import 'package:ente_auth/utils/navigation_util.dart';
-import 'package:ente_auth/utils/platform_util.dart';
 import 'package:ente_auth/utils/toast_util.dart';
-import 'package:ente_crypto_dart/ente_crypto_dart.dart';
+import 'package:ente_crypto_api/ente_crypto_api.dart';
+import 'package:ente_lock_screen/local_authentication_service.dart';
+import 'package:ente_lock_screen/lock_screen_settings.dart';
+import 'package:ente_lock_screen/ui/lock_screen_options.dart';
+import 'package:ente_ui/components/toggle_switch_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 
@@ -86,7 +84,6 @@ class _SecuritySectionWidgetState extends State<SecuritySectionWidget> {
               );
               final isEmailMFAEnabled =
                   UserService.instance.hasEmailMFAEnabled();
-              await PlatformUtil.refocusWindows();
               if (hasAuthenticated) {
                 await updateEmailMFA(!isEmailMFAEnabled);
                 if (mounted) {
@@ -122,13 +119,12 @@ class _SecuritySectionWidgetState extends State<SecuritySectionWidget> {
               context,
               context.l10n.authToViewYourActiveSessions,
             );
-            await PlatformUtil.refocusWindows();
             if (hasAuthenticated) {
               // ignore: unawaited_futures
               Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (BuildContext context) {
-                    return const SessionsPage();
+                    return SessionsPage(Configuration.instance);
                   },
                 ),
               );
@@ -166,21 +162,12 @@ class _SecuritySectionWidgetState extends State<SecuritySectionWidget> {
               return;
             }
           }
-          if (await LockScreenSettings.instance.shouldShowLockScreen()) {
-            final bool result = await requestAuthentication(
-              context,
-              context.l10n.authToChangeLockscreenSetting,
-            );
-            if (result) {
-              await Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (BuildContext context) {
-                    return const LockScreenOptions();
-                  },
-                ),
-              );
-            }
-          } else {
+          final hasAuthenticated = await LocalAuthenticationService.instance
+              .requestLocalAuthentication(
+            context,
+            context.l10n.authToChangeLockscreenSetting,
+          );
+          if (hasAuthenticated) {
             await Navigator.of(context).push(
               MaterialPageRoute(
                 builder: (BuildContext context) {
@@ -204,8 +191,8 @@ class _SecuritySectionWidgetState extends State<SecuritySectionWidget> {
           await LocalAuthenticationService.instance.requestLocalAuthentication(
         context,
         context.l10n.authenticateGeneric,
+        refocusWindows: false,
       );
-      await PlatformUtil.refocusWindows();
       if (!hasAuthenticated) {
         return;
       }
@@ -225,7 +212,7 @@ class _SecuritySectionWidgetState extends State<SecuritySectionWidget> {
           CryptoUtil.bin2base64(encryptionResult.nonce!),
         );
       }
-      PasskeyService.instance.openPasskeyPage(buildContext).ignore();
+      await PasskeyService.instance.openPasskeyPage(buildContext);
     } catch (e, s) {
       _logger.severe("failed to open passkey page", e, s);
       await showGenericErrorDialog(
@@ -243,6 +230,7 @@ class _SecuritySectionWidgetState extends State<SecuritySectionWidget> {
         await routeToPage(
           context,
           RequestPasswordVerificationPage(
+            Configuration.instance,
             onPasswordVerified: (Uint8List keyEncryptionKey) async {
               final Uint8List loginKey =
                   await CryptoUtil.deriveLoginKey(keyEncryptionKey);

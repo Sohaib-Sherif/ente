@@ -21,6 +21,25 @@ type ContactRow struct {
 	EncryptedKey       *string
 }
 
+// HasActiveLegacyContact returns true when the user has at least one accepted
+// legacy contact configured on their account.
+func (r *Repository) HasActiveLegacyContact(ctx context.Context, userID int64) (bool, error) {
+	var exists bool
+	err := r.DB.QueryRowContext(ctx,
+		`SELECT EXISTS(
+			SELECT 1
+			FROM emergency_contact
+			WHERE user_id = $1 AND state = $2
+		)`,
+		userID,
+		ente.ContactAccepted,
+	).Scan(&exists)
+	if err != nil {
+		return false, stacktrace.Propagate(err, "failed to check active legacy contact")
+	}
+	return exists, nil
+}
+
 func (r *Repository) AddEmergencyContact(ctx context.Context, userID int64, emergencyContactID int64, encKey string, noticeInHrs int) (bool, error) {
 	if userID == emergencyContactID {
 		return false, ente.NewBadRequestWithMessage("user cannot add themself as emergency contact")
@@ -104,6 +123,27 @@ func (r *Repository) UpdateState(ctx context.Context,
 		panic("invalid state, only one row should be updated")
 	}
 	return count > 0, stacktrace.Propagate(err2, "")
+}
+
+// UpdateRecoveryNotice updates the notice period for an emergency contact
+// Only allows update if the contact state is INVITED or ACCEPTED
+func (r *Repository) UpdateRecoveryNotice(ctx context.Context,
+	userID int64,
+	emergencyContactID int64,
+	noticePeriodInHrs int) error {
+	res, err := r.DB.ExecContext(ctx, `UPDATE emergency_contact SET notice_period_in_hrs=$1 WHERE user_id=$2 and emergency_contact_id=$3 and state = ANY($4)`,
+		noticePeriodInHrs, userID, emergencyContactID, pq.Array([]ente.ContactState{ente.UserInvitedContact, ente.ContactAccepted}))
+	if err != nil {
+		return stacktrace.Propagate(err, "failed to update notice period")
+	}
+	count, err := res.RowsAffected()
+	if err != nil {
+		return stacktrace.Propagate(err, "failed to get rows affected")
+	}
+	if count == 0 {
+		return ente.NewBadRequestWithMessage("emergency contact not found or not in valid state")
+	}
+	return nil
 }
 
 func getValidPreviousState(cs ente.ContactState) []ente.ContactState {

@@ -1,33 +1,38 @@
-import 'dart:async';
+import "dart:async";
 import "dart:math";
 
-import 'package:flutter/material.dart';
-import 'package:logging/logging.dart';
+import "package:ente_pure_utils/ente_pure_utils.dart";
+import "package:flutter/material.dart";
+import "package:logging/logging.dart";
+import "package:photos/core/configuration.dart";
 import "package:photos/core/constants.dart";
-import 'package:photos/core/event_bus.dart';
-import 'package:photos/events/collection_updated_event.dart';
-import 'package:photos/events/local_photos_updated_event.dart';
+import "package:photos/core/event_bus.dart";
+import "package:photos/events/album_sort_order_change_event.dart";
+import "package:photos/events/app_mode_changed_event.dart";
+import "package:photos/events/collection_updated_event.dart";
+import "package:photos/events/local_photos_updated_event.dart";
 import "package:photos/events/tab_changed_event.dart";
-import 'package:photos/events/user_logged_out_event.dart';
+import "package:photos/events/user_logged_out_event.dart";
 import "package:photos/generated/l10n.dart";
-import 'package:photos/models/collection/collection_items.dart';
+import "package:photos/models/collection/collection_items.dart";
 import "package:photos/models/search/generic_search_result.dart";
-import 'package:photos/services/collections_service.dart';
+import "package:photos/service_locator.dart";
+import "package:photos/services/collections_service.dart";
 import "package:photos/services/search_service.dart";
 import "package:photos/theme/ente_theme.dart";
 import "package:photos/ui/collections/album/row_item.dart";
 import "package:photos/ui/collections/collection_list_page.dart";
-import 'package:photos/ui/common/loading_widget.dart';
+import "package:photos/ui/common/loading_widget.dart";
+import "package:photos/ui/components/banners/shared_empty_offline_state_widget.dart";
 import "package:photos/ui/components/buttons/icon_button_widget.dart";
-import 'package:photos/ui/tabs/section_title.dart';
+import "package:photos/ui/social/widgets/feed_preview_widget.dart";
+import "package:photos/ui/tabs/section_title.dart";
 import "package:photos/ui/tabs/shared/all_quick_links_page.dart";
 import "package:photos/ui/tabs/shared/empty_state.dart";
 import "package:photos/ui/tabs/shared/quick_link_album_item.dart";
 import "package:photos/ui/viewer/gallery/collect_photos_card_widget.dart";
 import "package:photos/ui/viewer/gallery/collection_page.dart";
 import "package:photos/ui/viewer/search_tab/contacts_section.dart";
-import "package:photos/utils/navigation_util.dart";
-import "package:photos/utils/standalone/debouncer.dart";
 
 class SharedCollectionsTab extends StatefulWidget {
   const SharedCollectionsTab({super.key});
@@ -39,10 +44,14 @@ class SharedCollectionsTab extends StatefulWidget {
 class _SharedCollectionsTabState extends State<SharedCollectionsTab>
     with AutomaticKeepAliveClientMixin {
   final Logger _logger = Logger("SharedCollectionGallery");
+  static const _sharedTabIndex = 2;
+  static const _feedPreviewStartupDelay = Duration(seconds: 5);
   late StreamSubscription<LocalPhotosUpdatedEvent> _localFilesSubscription;
   late StreamSubscription<CollectionUpdatedEvent>
       _collectionUpdatesSubscription;
+  late StreamSubscription<AlbumSortOrderChangeEvent> _albumSortOrderChangeEvent;
   late StreamSubscription<UserLoggedOutEvent> _loggedOutEvent;
+  late StreamSubscription<AppModeChangedEvent> _appModeChangedEvent;
   final _debouncer = Debouncer(
     const Duration(seconds: 2),
     executionInterval: const Duration(seconds: 5),
@@ -56,9 +65,13 @@ class _SharedCollectionsTabState extends State<SharedCollectionsTab>
   // user has been in the tab for 500ms. This is to prevent loading widgets when
   // the user is just switching tabs quickly.
   final _canLoadDeferredWidgets = ValueNotifier<bool>(false);
+  final _canLoadFeedPreview = ValueNotifier<bool>(false);
   final _debouncerForDeferringLoad = Debouncer(
     const Duration(milliseconds: 500),
   );
+  Timer? _feedPreviewStartupTimer;
+  var _isOnSharedTab = false;
+  var _tabChangeSubscriptionCancelled = false;
 
   static const maxThumbnailWidth = 224.0;
   static const crossAxisSpacing = 8.0;
@@ -85,39 +98,106 @@ class _SharedCollectionsTabState extends State<SharedCollectionsTab>
         }
       });
     });
+    _albumSortOrderChangeEvent =
+        Bus.instance.on<AlbumSortOrderChangeEvent>().listen((event) {
+      if (mounted) {
+        setState(() {});
+      }
+    });
     _loggedOutEvent = Bus.instance.on<UserLoggedOutEvent>().listen((event) {
       setState(() {});
     });
+    _appModeChangedEvent =
+        Bus.instance.on<AppModeChangedEvent>().listen((event) {
+      if (mounted) {
+        setState(() {});
+      }
+    });
+    _scheduleFeedPreviewFromSharedTabBuild();
 
     _tabChangeEvent = Bus.instance.on<TabChangedEvent>().listen((event) {
-      if (event.selectedIndex == 2) {
-        _debouncerForDeferringLoad.run(() async {
-          _logger.info("Loading deferred widgets in shared collections tab");
-          if (mounted) {
-            _canLoadDeferredWidgets.value = true;
-            await _tabChangeEvent.cancel();
-            Future.delayed(
-              Duration.zero,
-              () => _debouncerForDeferringLoad.cancelDebounceTimer(),
-            );
-          }
-        });
+      _isOnSharedTab = event.selectedIndex == _sharedTabIndex;
+      if (_isOnSharedTab) {
+        _enableDeferredWidgetsAfterDwell();
+        _enableFeedPreviewImmediately();
       } else {
-        _debouncerForDeferringLoad.cancelDebounceTimer();
-        if (mounted) {
-          _canLoadDeferredWidgets.value = false;
+        if (!_canLoadDeferredWidgets.value) {
+          _debouncerForDeferringLoad.cancelDebounceTimer();
         }
       }
     });
   }
 
+  void _enableDeferredWidgetsAfterDwell() {
+    if (_canLoadDeferredWidgets.value) {
+      return;
+    }
+    _debouncerForDeferringLoad.run(() async {
+      _logger.info("Loading deferred widgets in shared collections tab");
+      if (mounted) {
+        _canLoadDeferredWidgets.value = true;
+        _maybeCancelTabChangeListener();
+      }
+    });
+  }
+
+  void _scheduleFeedPreviewFromSharedTabBuild() {
+    if (_canLoadFeedPreview.value) {
+      return;
+    }
+    _feedPreviewStartupTimer?.cancel();
+    _feedPreviewStartupTimer = Timer(_feedPreviewStartupDelay, () {
+      if (!mounted || _canLoadFeedPreview.value) {
+        return;
+      }
+      _enableFeedPreview("shared-tab-build-delay-elapsed");
+    });
+  }
+
+  void _enableFeedPreviewImmediately() {
+    _enableFeedPreview("shared-tab-selected");
+  }
+
+  void _enableFeedPreview(String reason) {
+    if (_canLoadFeedPreview.value) {
+      return;
+    }
+    _feedPreviewStartupTimer?.cancel();
+    _feedPreviewStartupTimer = null;
+    _logger.info("Loading feed preview in shared collections tab ($reason)");
+    _canLoadFeedPreview.value = true;
+    _maybeCancelTabChangeListener();
+  }
+
+  void _maybeCancelTabChangeListener() {
+    if (!_canLoadDeferredWidgets.value || !_canLoadFeedPreview.value) {
+      return;
+    }
+    _debouncerForDeferringLoad.cancelDebounceTimer();
+    _feedPreviewStartupTimer?.cancel();
+    _feedPreviewStartupTimer = null;
+    if (!_tabChangeSubscriptionCancelled) {
+      _tabChangeSubscriptionCancelled = true;
+      unawaited(_tabChangeEvent.cancel());
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     super.build(context);
+    final bool offlineUiMode =
+        isOfflineMode && !Configuration.instance.hasConfiguredAccount();
     return FutureBuilder<SharedCollections>(
-      future: Future.value(CollectionsService.instance.getSharedCollections()),
+      future: offlineUiMode
+          ? Future.value(SharedCollections.empty())
+          : Future.value(CollectionsService.instance.getSharedCollections()),
       builder: (context, snapshot) {
         if (snapshot.hasData) {
+          if (offlineUiMode) {
+            return const SafeArea(
+              child: SharedEmptyOfflineStateWidget(),
+            );
+          }
           if ((snapshot.data?.incoming.length ?? 0) == 0 &&
               (snapshot.data?.quickLinks.length ?? 0) == 0 &&
               (snapshot.data?.outgoing.length ?? 0) == 0) {
@@ -130,7 +210,9 @@ class _SharedCollectionsTabState extends State<SharedCollectionsTab>
             snapshot.error,
             snapshot.stackTrace,
           );
-          return Center(child: Text(S.of(context).somethingWentWrong));
+          return Center(
+            child: Text(AppLocalizations.of(context).somethingWentWrong),
+          );
         } else {
           return const EnteLoadingWidget();
         }
@@ -149,9 +231,9 @@ class _SharedCollectionsTabState extends State<SharedCollectionsTab>
             albumsCountInRow;
     const quickLinkTitleHeroTag = "quick_link_title";
     final SectionTitle sharedWithYou =
-        SectionTitle(title: S.of(context).sharedWithYou);
+        SectionTitle(title: AppLocalizations.of(context).sharedWithYou);
     final SectionTitle sharedByYou =
-        SectionTitle(title: S.of(context).sharedByYou);
+        SectionTitle(title: AppLocalizations.of(context).sharedByYou);
     final colorTheme = getEnteColorScheme(context);
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
@@ -159,6 +241,14 @@ class _SharedCollectionsTabState extends State<SharedCollectionsTab>
         margin: const EdgeInsets.only(bottom: 50),
         child: Column(
           children: [
+            ValueListenableBuilder(
+              valueListenable: _canLoadFeedPreview,
+              builder: (context, canLoad, _) {
+                return canLoad
+                    ? const FeedPreviewWidget()
+                    : const SizedBox.shrink();
+              },
+            ),
             Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -180,10 +270,35 @@ class _SharedCollectionsTabState extends State<SharedCollectionsTab>
                       : null,
                   Hero(tag: "incoming", child: sharedWithYou),
                   trailingWidget: collections.incoming.isNotEmpty
-                      ? IconButtonWidget(
-                          icon: Icons.chevron_right,
-                          iconButtonType: IconButtonType.secondary,
-                          iconColor: colorTheme.blurStrokePressed,
+                      ? Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButtonWidget(
+                              icon: Icons.search,
+                              iconButtonType: IconButtonType.secondary,
+                              iconColor: colorTheme.blurStrokePressed,
+                              onTap: () {
+                                unawaited(
+                                  routeToPage(
+                                    context,
+                                    CollectionListPage(
+                                      collections.incoming,
+                                      sectionType:
+                                          UISectionType.incomingCollections,
+                                      tag: "incoming",
+                                      appTitle: sharedWithYou,
+                                      startInSearchMode: true,
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                            IconButtonWidget(
+                              icon: Icons.chevron_right,
+                              iconButtonType: IconButtonType.secondary,
+                              iconColor: colorTheme.blurStrokePressed,
+                            ),
+                          ],
                         )
                       : null,
                 ),
@@ -200,6 +315,9 @@ class _SharedCollectionsTabState extends State<SharedCollectionsTab>
                             return Padding(
                               padding: const EdgeInsets.only(
                                 right: horizontalPadding / 2,
+                              ),
+                              key: ValueKey(
+                                'incoming_${collections.incoming[index].id}',
                               ),
                               child: AlbumRowItemWidget(
                                 collections.incoming[index],
@@ -236,10 +354,35 @@ class _SharedCollectionsTabState extends State<SharedCollectionsTab>
                       : null,
                   Hero(tag: "outgoing", child: sharedByYou),
                   trailingWidget: collections.outgoing.isNotEmpty
-                      ? IconButtonWidget(
-                          icon: Icons.chevron_right,
-                          iconButtonType: IconButtonType.secondary,
-                          iconColor: colorTheme.blurStrokePressed,
+                      ? Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButtonWidget(
+                              icon: Icons.search,
+                              iconButtonType: IconButtonType.secondary,
+                              iconColor: colorTheme.blurStrokePressed,
+                              onTap: () {
+                                unawaited(
+                                  routeToPage(
+                                    context,
+                                    CollectionListPage(
+                                      collections.outgoing,
+                                      sectionType:
+                                          UISectionType.outgoingCollections,
+                                      tag: "outgoing",
+                                      appTitle: sharedByYou,
+                                      startInSearchMode: true,
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                            IconButtonWidget(
+                              icon: Icons.chevron_right,
+                              iconButtonType: IconButtonType.secondary,
+                              iconColor: colorTheme.blurStrokePressed,
+                            ),
+                          ],
                         )
                       : null,
                 ),
@@ -256,6 +399,9 @@ class _SharedCollectionsTabState extends State<SharedCollectionsTab>
                             return Padding(
                               padding: const EdgeInsets.only(
                                 right: horizontalPadding / 2,
+                              ),
+                              key: ValueKey(
+                                'outgoing_${collections.outgoing[index].id}',
                               ),
                               child: AlbumRowItemWidget(
                                 collections.outgoing[index],
@@ -291,7 +437,7 @@ class _SharedCollectionsTabState extends State<SharedCollectionsTab>
                         Hero(
                           tag: quickLinkTitleHeroTag,
                           child: SectionTitle(
-                            title: S.of(context).quickLinks,
+                            title: AppLocalizations.of(context).quickLinks,
                           ),
                         ),
                         trailingWidget: numberOfQuickLinks > maxQuickLinks
@@ -380,11 +526,18 @@ class _SharedCollectionsTabState extends State<SharedCollectionsTab>
   void dispose() {
     _localFilesSubscription.cancel();
     _collectionUpdatesSubscription.cancel();
+    _albumSortOrderChangeEvent.cancel();
     _loggedOutEvent.cancel();
+    _appModeChangedEvent.cancel();
     _debouncer.cancelDebounceTimer();
     _debouncerForDeferringLoad.cancelDebounceTimer();
-    _tabChangeEvent.cancel();
+    _feedPreviewStartupTimer?.cancel();
+    if (!_tabChangeSubscriptionCancelled) {
+      _tabChangeSubscriptionCancelled = true;
+      unawaited(_tabChangeEvent.cancel());
+    }
     _canLoadDeferredWidgets.dispose();
+    _canLoadFeedPreview.dispose();
     super.dispose();
   }
 

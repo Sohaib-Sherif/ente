@@ -100,7 +100,7 @@ class ExtentsPageView extends StatefulWidget {
     int? itemCount,
     this.dragStartBehavior = DragStartBehavior.start,
     this.openDrawer,
-  })  : childrenDelegate = SliverChildBuilderDelegate(
+  }) : childrenDelegate = SliverChildBuilderDelegate(
           itemBuilder,
           childCount: itemCount,
           addAutomaticKeepAlives: false,
@@ -198,7 +198,7 @@ class ExtentsPageView extends StatefulWidget {
     required this.childrenDelegate,
     this.dragStartBehavior = DragStartBehavior.start,
     this.openDrawer,
-  })  : extents = 0;
+  }) : extents = 0;
 
   /// The number of pages to build off screen.
   ///
@@ -268,22 +268,27 @@ class ExtentsPageView extends StatefulWidget {
 
 class _PageViewState extends State<ExtentsPageView> {
   int _lastReportedPage = 0;
+  VoidCallback? _openDrawerListener;
 
   @override
   void initState() {
     super.initState();
     _lastReportedPage = widget.controller.initialPage;
-    widget.openDrawer != null
-        ? widget.controller.addListener(() {
-            if (widget.controller.offset < -45) {
-              widget.openDrawer!();
-            }
-          })
-        : null;
+    if (widget.openDrawer != null) {
+      _openDrawerListener = () {
+        if (widget.controller.offset < -45) {
+          widget.openDrawer!();
+        }
+      };
+      widget.controller.addListener(_openDrawerListener!);
+    }
   }
 
   @override
   void dispose() {
+    if (_openDrawerListener != null) {
+      widget.controller.removeListener(_openDrawerListener!);
+    }
     super.dispose();
   }
 

@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:ente_auth/core/event_bus.dart';
 import 'package:ente_auth/events/codes_updated_event.dart';
 import "package:ente_auth/l10n/l10n.dart";
 import 'package:ente_auth/models/all_icon_data.dart';
@@ -23,6 +22,7 @@ import 'package:ente_auth/ui/utils/icon_utils.dart';
 import 'package:ente_auth/utils/dialog_util.dart';
 import 'package:ente_auth/utils/toast_util.dart';
 import 'package:ente_auth/utils/totp_util.dart';
+import 'package:ente_events/event_bus.dart';
 import "package:flutter/material.dart";
 import 'package:logging/logging.dart';
 
@@ -295,6 +295,7 @@ class _SetupEnterSecretKeyPageState extends State<SetupEnterSecretKeyPage> {
                   const SizedBox(height: 12),
                   Wrap(
                     spacing: 12,
+                    runSpacing: 8,
                     alignment: WrapAlignment.start,
                     children: [
                       ...allTags.map(
@@ -348,7 +349,7 @@ class _SetupEnterSecretKeyPageState extends State<SetupEnterSecretKeyPage> {
                     width: 400,
                     child: OutlinedButton(
                       style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        padding: const EdgeInsets.symmetric(vertical: 0),
                       ),
                       onPressed: () async {
                         final digits =
@@ -432,11 +433,10 @@ class _SetupEnterSecretKeyPageState extends State<SetupEnterSecretKeyPage> {
               CodeDisplay(tags: selectedTags);
       display.note = notes;
       if (widget.code != null) {
-        if (widget.code!.issuer != issuer) {
-          display.iconID = issuer.toLowerCase();
-        }
         if (widget.code!.display.iconID != _customIconID.toLowerCase()) {
           display.iconID = _customIconID.toLowerCase();
+        } else if (widget.code!.issuer != issuer) {
+          display.iconID = issuer.toLowerCase();
         }
       }
 

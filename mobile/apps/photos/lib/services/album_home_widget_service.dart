@@ -4,6 +4,7 @@ import "dart:math";
 
 import "package:collection/collection.dart";
 import 'package:crypto/crypto.dart';
+import 'package:ente_pure_utils/ente_pure_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:logging/logging.dart';
@@ -18,7 +19,6 @@ import 'package:photos/services/home_widget_service.dart';
 import 'package:photos/services/sync/local_sync_service.dart';
 import "package:photos/ui/viewer/file/detail_page.dart";
 import 'package:photos/ui/viewer/gallery/collection_page.dart';
-import 'package:photos/utils/navigation_util.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AlbumHomeWidgetService {
@@ -39,12 +39,7 @@ class AlbumHomeWidgetService {
 
   // Properties
   final Logger _logger = Logger((AlbumHomeWidgetService).toString());
-  late final SharedPreferences _prefs;
-
-  // Initialization
-  void init(SharedPreferences prefs) {
-    _prefs = prefs;
-  }
+  SharedPreferences get _prefs => ServiceLocator.instance.prefs;
 
   // Public methods
   List<int>? getSelectedAlbumIds() {
@@ -235,7 +230,7 @@ class AlbumHomeWidgetService {
   Future<bool> _hasAnyBlockers([bool isBg = false]) async {
     // Check if first import is completed
     final hasCompletedFirstImport =
-        LocalSyncService.instance.hasCompletedFirstImport();
+        LocalSyncService.instance.hasCompletedFirstImportOrBypassed();
     if (!hasCompletedFirstImport) {
       return true;
     }
@@ -363,8 +358,32 @@ class AlbumHomeWidgetService {
 
     final bool isWidgetPresent = await countHomeWidgets() > 0;
 
-    final limit = isWidgetPresent ? MAX_ALBUMS_LIMIT : 5;
-    final maxAttempts = limit * 10;
+    final limit = isWidgetPresent
+        ? HomeWidgetService.instance.getWidgetImageLimit()
+        : HomeWidgetService.WIDGET_IMAGE_LIMIT_MINIMAL;
+
+    final Set<String> uniqueRenderableItems = <String>{};
+    for (final entry in albumsWithFiles.entries) {
+      for (final file in entry.value.$2) {
+        if (file.generatedID != null) {
+          uniqueRenderableItems.add('${entry.key}_${file.generatedID}');
+        }
+      }
+    }
+
+    final int renderTarget = uniqueRenderableItems.isEmpty
+        ? 0
+        : min(limit, uniqueRenderableItems.length);
+
+    if (renderTarget == 0) {
+      _logger.warning(
+        "No unique files available for widget rendering (limit=$limit)",
+      );
+      await clearWidget();
+      return;
+    }
+
+    final maxAttempts = renderTarget * 10;
 
     int renderedCount = 0;
     int attemptsCount = 0;
@@ -375,7 +394,10 @@ class AlbumHomeWidgetService {
     final albumsWithFilesEntries = albumsWithFiles.entries.toList();
     final random = Random();
 
-    while (renderedCount < limit && attemptsCount < maxAttempts) {
+    final Set<String> renderedKeys = <String>{};
+    final Set<String> failedKeys = <String>{};
+
+    while (renderedCount < renderTarget && attemptsCount < maxAttempts) {
       final randomEntry =
           albumsWithFilesEntries[random.nextInt(albumsWithFilesLength)];
 
@@ -384,8 +406,19 @@ class AlbumHomeWidgetService {
       final randomAlbumFile = randomEntry.value.$2.elementAt(
         random.nextInt(randomEntry.value.$2.length),
       );
+      if (randomAlbumFile.generatedID == null) {
+        attemptsCount++;
+        continue;
+      }
       final albumId = randomEntry.key;
       final albumName = randomEntry.value.$1;
+
+      final String renderKey = '${albumId}_${randomAlbumFile.generatedID}';
+      // Skip if already rendered or previously failed
+      if (!renderedKeys.add(renderKey) || failedKeys.contains(renderKey)) {
+        attemptsCount++;
+        continue;
+      }
 
       final renderResult = await HomeWidgetService.instance
           .renderFile(
@@ -417,14 +450,18 @@ class AlbumHomeWidgetService {
         }
 
         renderedCount++;
+        attemptsCount++;
+      } else {
+        // Track failed renders to avoid retrying known-bad files
+        renderedKeys.remove(renderKey);
+        failedKeys.add(renderKey);
+        attemptsCount++;
       }
-
-      attemptsCount++;
     }
 
     if (attemptsCount >= maxAttempts) {
       _logger.warning(
-        "Hit max attempts $maxAttempts. Only rendered $renderedCount of limit $limit.",
+        "Hit max attempts $maxAttempts. Only rendered $renderedCount of target $renderTarget.",
       );
     }
 

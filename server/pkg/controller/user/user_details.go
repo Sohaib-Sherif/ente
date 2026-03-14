@@ -6,6 +6,7 @@ import (
 	"github.com/ente-io/museum/ente"
 	"github.com/ente-io/museum/ente/details"
 	bonus "github.com/ente-io/museum/ente/storagebonus"
+	"github.com/ente-io/museum/pkg/repo"
 	"github.com/ente-io/museum/pkg/utils/billing"
 	"github.com/ente-io/museum/pkg/utils/recover"
 	"github.com/ente-io/museum/pkg/utils/time"
@@ -32,6 +33,7 @@ func (c *UserController) GetDetailsV2(ctx *gin.Context, userID int64, fetchMemor
 	var passkeyCount int64
 	var fileCount, sharedCollectionCount, usage int64
 	var bonus *bonus.ActiveStorageBonus
+	var lockerUsage *repo.LockerUsage
 	g.Go(func() error {
 		resp, err := c.GetUser(userID)
 		if err != nil {
@@ -39,6 +41,7 @@ func (c *UserController) GetDetailsV2(ctx *gin.Context, userID int64, fetchMemor
 		}
 		user = &resp
 		bonusUserId := userID
+		var subscriptionUserIDs []int64
 		if user.FamilyAdminID != nil {
 			bonusUserId = *user.FamilyAdminID
 			familyDataResp, familyErr := c.FamilyController.FetchMembersForAdminID(ctx, *user.FamilyAdminID)
@@ -46,10 +49,19 @@ func (c *UserController) GetDetailsV2(ctx *gin.Context, userID int64, fetchMemor
 				return stacktrace.Propagate(familyErr, "")
 			}
 			familyData = &familyDataResp
+			for _, familyMember := range familyData.Members {
+				subscriptionUserIDs = append(subscriptionUserIDs, familyMember.MemberUserID)
+			}
+		} else {
+			subscriptionUserIDs = []int64{userID}
 		}
 		bonusValue, bonusErr := c.UserCacheController.GetActiveStorageBonus(ctx, bonusUserId)
 		if bonusErr != nil {
 			return stacktrace.Propagate(bonusErr, "failed to fetch storage bonus")
+		}
+		lockerUsage, err = c.UsageRepo.GetLockerUsage(ctx, subscriptionUserIDs)
+		if err != nil {
+			return stacktrace.Propagate(err, "failed to fetch locker usage")
 		}
 		bonus = bonusValue
 		return nil
@@ -136,5 +148,30 @@ func (c *UserController) GetDetailsV2(ctx *gin.Context, userID int64, fetchMemor
 		// Note: SharedCollectionsCount is deprecated. Returning default value as 0
 		result.SharedCollectionsCount = &sharedCollectionCount
 	}
+	if lockerUsage != nil {
+		// reduce the locker usage from user's usage for surfacing on photos app.
+		for _, userLockerUsage := range lockerUsage.Users {
+			if userLockerUsage.UserID == userID {
+				result.Usage -= userLockerUsage.Usage
+			}
+		}
+		if familyData != nil {
+			for _, member := range familyData.Members {
+				for _, userLockerUsage := range lockerUsage.Users {
+					if userLockerUsage.UserID == member.MemberUserID {
+						result.Usage -= userLockerUsage.Usage
+					}
+				}
+			}
+			result.FamilyData = familyData
+		}
+		// For Locker app, include family usage data
+		if app == ente.Locker {
+			result.LockerFamilyUsage = &details.LockerFamilyUsage{
+				FamilyFileCount: lockerUsage.TotalFileCount,
+			}
+		}
+	}
+
 	return result, nil
 }
