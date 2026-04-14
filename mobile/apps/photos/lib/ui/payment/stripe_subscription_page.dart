@@ -19,8 +19,8 @@ import 'package:photos/ui/common/web_page.dart';
 import 'package:photos/ui/components/buttons/button_widget.dart';
 import 'package:photos/ui/components/buttons/button_widget_v2.dart';
 import "package:photos/ui/components/menu_item_widget/menu_item_widget_new.dart";
+import 'package:photos/ui/family/family_plan_page.dart';
 import 'package:photos/ui/notification/toast.dart';
-import 'package:photos/ui/payment/child_subscription_widget.dart';
 import 'package:photos/ui/payment/payment_web_page.dart';
 import 'package:photos/ui/payment/subscription_common_widgets.dart';
 import 'package:photos/ui/payment/subscription_plan_widget.dart';
@@ -67,6 +67,19 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
         .then((userDetails) async {
       _userDetails = userDetails;
       _currentSubscription = userDetails.subscription;
+
+      if (_userDetails.isPartOfFamily() && !_userDetails.isFamilyAdmin()) {
+        if (mounted) {
+          replacePage(
+            context,
+            FamilyPlanPage(
+              initialUserDetails: _userDetails,
+              refreshOnOpen: false,
+            ),
+          );
+        }
+        return;
+      }
 
       _showYearlyPlan = _currentSubscription!.isYearlyPlan();
       _hideCurrentPlanSelection =
@@ -130,9 +143,6 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
   Widget build(BuildContext context) {
     colorScheme = getEnteColorScheme(context);
     final textTheme = getEnteTextTheme(context);
-    final bool isFamilyChildUser = _hasLoadedData &&
-        _userDetails.isPartOfFamily() &&
-        !_userDetails.isFamilyAdmin();
 
     return Scaffold(
       backgroundColor: colorScheme.backgroundColour,
@@ -146,15 +156,13 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
             Navigator.of(context).pop();
           },
         ),
-        title: isFamilyChildUser
-            ? null
-            : Text(
-                widget.isOnboarding
-                    ? AppLocalizations.of(context).chooseYourPlan
-                    : AppLocalizations.of(context).subscription,
-                style: textTheme.largeBold,
-              ),
-        centerTitle: !isFamilyChildUser,
+        title: Text(
+          widget.isOnboarding
+              ? AppLocalizations.of(context).chooseYourPlan
+              : AppLocalizations.of(context).subscription,
+          style: textTheme.largeBold,
+        ),
+        centerTitle: true,
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -162,9 +170,7 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
           Expanded(child: _getBody()),
         ],
       ),
-      bottomNavigationBar: widget.isOnboarding &&
-              _hasLoadedData &&
-              !(_userDetails.isPartOfFamily() && !_userDetails.isFamilyAdmin())
+      bottomNavigationBar: widget.isOnboarding && _hasLoadedData
           ? Container(
               color: colorScheme.backgroundColour,
               child: SafeArea(
@@ -196,11 +202,7 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
       _fetchSub();
     }
     if (_hasLoadedData) {
-      if (_userDetails.isPartOfFamily() && !_userDetails.isFamilyAdmin()) {
-        return ChildSubscriptionWidget(userDetails: _userDetails);
-      } else {
-        return _buildPlans();
-      }
+      return _buildPlans();
     }
     return const EnteLoadingWidget();
   }
@@ -210,6 +212,7 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
 
     widgets.add(
       SubscriptionToggle(
+        isYearly: _showYearlyPlan,
         onToggle: (p0) {
           _showYearlyPlan = p0;
           _filterStripeForUI();
@@ -250,7 +253,7 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
     if (!widget.isOnboarding) {
       widgets.add(
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 2, 16, 2),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           child: MenuItemWidgetNew(
             title: AppLocalizations.of(context).manageFamily,
             menuItemColor: colorScheme.fillFaint,
@@ -260,8 +263,26 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
               color: colorScheme.strokeBase,
             ),
             onTap: () async {
-              // ignore: unawaited_futures
-              _billingService.launchFamilyPortal(context, _userDetails);
+              late final UserDetails userDetails;
+              try {
+                userDetails =
+                    await _userService.getUserDetailsV2(memoryCount: false);
+              } catch (error) {
+                if (!context.mounted) {
+                  return;
+                }
+                await showGenericErrorDialog(context: context, error: error);
+                return;
+              }
+              if (!context.mounted) {
+                return;
+              }
+              await _billingService.launchFamilyPortal(
+                context,
+                userDetails,
+                popOnFreeAdvertViewPlans: true,
+                refreshOnOpen: false,
+              );
             },
           ),
         ),
@@ -272,7 +293,7 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
     if (_currentSubscription!.productID != freeProductID) {
       widgets.add(
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 2, 16, 2),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           child: MenuItemWidgetNew(
             title: "Manage payment method",
             menuItemColor: colorScheme.fillFaint,
@@ -293,7 +314,7 @@ class _StripeSubscriptionPageState extends State<StripeSubscriptionPage> {
     if (_hasActiveSubscription && _isStripeSubscriber) {
       widgets.add(
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           child: _stripeRenewOrCancelButton(),
         ),
       );

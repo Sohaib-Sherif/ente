@@ -111,11 +111,11 @@ Learn more in the [Custom domains guide](/photos/features/sharing-and-collaborat
 
 You can do this by adding your partner as a viewer or collaborator to your camera folder, and asking them to do the same for you. On Android this is the **Camera** folder, and on iOS this is **Recents** (or equivalent).
 
-Any new photos backed up to these folders will automatically be shared and synced to the other person's device. This results in two separate albums — one for your photos and one for your partner's — where both of you can view and add photos.
+Any new photos backed up to these folders will automatically be shared and synced to the other person's device. This results in two separate albums - one for your photos and one for your partner's - where both of you can view and add photos.
 
 ### Does Ente have a shared library feature where all photos are shared with another account (similar to Google Photos Partner Sharing/iCloud Shared Photo Library)? {#shared-library}
 
-Ente has shared albums but does not support sharing your entire library in one click. However, you can share all albums by selecting one album, choosing the "all" option on the bottom right, which selects all albums and then you can share in one go with a partner (they can be [viewer or collaborator](/photos/features/sharing-and-collaboration/collaboration#collaborating-with-ente-users)).
+Ente has shared albums but does not support sharing your entire library in one click. However, you can share all albums by selecting one album, choosing the "all" option on the bottom right, which selects all albums and then you can share in one go with a partner (they can be [viewer/collaborator/admin](/photos/features/sharing-and-collaboration/collaboration#collaborating-with-ente-users)).
 
 [Smart albums](/photos/features/albums-and-organization/auto-add-people#auto-add-people-to-albums-smart-albums) let you auto-add specific people to albums as well.
 
@@ -420,9 +420,17 @@ In collaborative albums (with other Ente users), you can see who uploaded each p
 
 ### Will upgrading to a paid plan automatically remove device limits for existing public links that were shared while on free plan? {#device-limit-upgrade}
 
-For existing album links shared while on the free plan, the device limit will not be removed automatically.
+For existing album links shared while on the free plan, the device limit will not be removed automatically. You can edit the device limit from manage link option (open album>link icon on top)
 
 Once you upgrade to a paid plan, all future public links will have no device limit unless you set one yourself.
+
+### Why do emails on my feed appear masked for public links? {#masked-emails-public-links}
+
+On public links, contributor emails are masked by default to protect privacy.
+
+If you're an album member viewing comments or likes in the mobile app, you'll see names instead of masked emails - but only for people you've already added to your People list with their linked email address.
+
+Anonymous viewers (people without an Ente account) can also show a name if they've entered one themselves when liking or commenting.
 
 ## Public Link Features
 
@@ -476,6 +484,10 @@ When you add a shared photo to your own album, Ente creates a hard copy that you
 
 We understand this uses extra storage in some use cases (like family photo sharing). We're exploring reference-based solutions in the future where storage would only count if the original is deleted. See [this discussion](https://github.com/ente-io/ente/discussions/790) for more details.
 
+### Why don't photos added via a shared link appear in my feed? {#shared-link-photos-not-in-feed}
+
+Only photos added by Ente users who joined the album directly will appear in your feed. Photos added through a public link by someone without an Ente account are not shown in the feed.
+
 ### Can I remove myself from a shared album? {#leave-shared-album}
 
 Yes, if someone has shared an album with you, you can leave it at any time:
@@ -505,13 +517,13 @@ You can also view all sharing activity in the Sharing tab/section.
 
 ### Who can create collaborative albums or public links? {#who-can-share}
 
-Album sharing and public links are now available on every plan, including the free tier. Free plan users can create public links with a [device limit](https://ente.io/help/photos/features/sharing-and-collaboration/public-links#device-limits) of 5. This limitation helps safeguard against potential platform abuse.
+Album sharing and public links are now available on every plan, including the free tier. Free plan users can create public links with a [device limit](https://ente.com/help/photos/features/sharing-and-collaboration/public-links#device-limits) of 5. This limitation helps safeguard against potential platform abuse.
 
 Free users can:
 
 - Create and receive shared albums
 - Share albums directly with other Ente users
-- Create public links ([device limit](https://ente.io/help/photos/features/sharing-and-collaboration/public-links#device-limits) of 5)
+- Create public links ([device limit](https://ente.com/help/photos/features/sharing-and-collaboration/public-links#device-limits) of 5)
 - View public links shared with them
 - Add photos to collect links that allow uploads
 
@@ -553,7 +565,7 @@ Learn more about [public link encryption](/photos/faq/security-and-privacy#publi
 
 The information required to decrypt an album is encrypted with the recipient's public key such that only they can decrypt them.
 
-You can read more about this in our [architecture documentation](https://ente.io/architecture#sharing).
+You can read more about this in our [architecture documentation](https://ente.com/architecture#sharing).
 
 In case of sharable links, the key to decrypt the album is appended by the client as a [fragment to the URL](https://en.wikipedia.org/wiki/URI_fragment), and is never sent to our servers.
 

@@ -227,7 +227,7 @@ const App: React.FC = () => {
                         <a
                             href="https://staff.ente.sh"
                             target="_blank"
-                            rel="noopener noreferrer"
+                            rel="noopener"
                             className="link-text"
                         >
                             staff.ente.io

@@ -76,6 +76,65 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get saveOffline => 'Save offline';
+
+  @override
+  String get unsave => 'Unsave';
+
+  @override
+  String get savingOffline => 'Saving offline...';
+
+  @override
+  String filesAvailableOffline(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count files saved offline',
+      one: '1 file saved offline',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String filesAvailableOfflinePartial(int successCount, int failureCount) {
+    String _temp0 = intl.Intl.pluralLogic(
+      successCount,
+      locale: localeName,
+      other: 'Saved $successCount files offline',
+      one: 'Saved 1 file offline',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      failureCount,
+      locale: localeName,
+      other: '$failureCount failed',
+      one: '1 failed',
+    );
+    return '$_temp0, $_temp1';
+  }
+
+  @override
+  String failedToSaveFilesOffline(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Failed to save $count files offline',
+      one: 'Failed to save 1 file offline',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String filesRemovedFromOffline(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count files removed from offline',
+      one: '1 file removed from offline',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get downloadFailed => 'Download failed';
 
   @override
@@ -811,6 +870,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get manageLink => 'Manage link';
 
   @override
+  String get linkLabel => 'Link';
+
+  @override
   String get linkExpiry => 'Link expiry';
 
   @override
@@ -1042,7 +1104,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sendInvite => 'Send invite';
 
   @override
-  String get shareTextRecommendUsingEnte => 'Download Ente\n\nhttps://ente.io';
+  String get shareTextRecommendUsingEnte => 'Download Ente\n\nhttps://ente.com';
 
   @override
   String get thisIsYourVerificationId => 'This is your Verification ID';
@@ -1075,12 +1137,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String shareMyVerificationID(Object verificationID) {
-    return 'Here\'s my verification ID: $verificationID for ente.io.';
+    return 'Here\'s my verification ID: $verificationID for ente.com.';
   }
 
   @override
   String shareTextConfirmOthersVerificationID(Object verificationID) {
-    return 'Hey, can you confirm that this is your ente.io verification ID: $verificationID';
+    return 'Hey, can you confirm that this is your ente.com verification ID: $verificationID';
   }
 
   @override
@@ -1575,6 +1637,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sharedWith => 'Shared with';
 
   @override
+  String get shareCollection => 'Share collection';
+
+  @override
   String get shareLater => 'Share later';
 
   @override
@@ -1804,4 +1869,16 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get authToViewYourActiveSessions =>
       'Please authenticate to view your active sessions';
+
+  @override
+  String deleteAccountFeedbackPrompt(String email) {
+    return 'Something not working? Reach out at $email, we\'d love to help.';
+  }
+
+  @override
+  String get sendFeedback => 'Send feedback';
+
+  @override
+  String get deleteAccountPermanentWarning =>
+      'This will permanently delete your Ente Auth, Photos, and Locker data';
 }

@@ -21,8 +21,8 @@ import 'package:photos/ui/common/loading_widget.dart';
 import 'package:photos/ui/common/progress_dialog.dart';
 import 'package:photos/ui/components/buttons/button_widget_v2.dart';
 import "package:photos/ui/components/menu_item_widget/menu_item_widget_new.dart";
+import 'package:photos/ui/family/family_plan_page.dart';
 import 'package:photos/ui/notification/toast.dart';
-import 'package:photos/ui/payment/child_subscription_widget.dart';
 import 'package:photos/ui/payment/subscription_common_widgets.dart';
 import 'package:photos/ui/payment/subscription_plan_widget.dart';
 import "package:photos/ui/payment/view_add_on_widget.dart";
@@ -159,9 +159,6 @@ class _StoreSubscriptionPageState extends State<StoreSubscriptionPage> {
   Widget build(BuildContext context) {
     final textTheme = getEnteTextTheme(context);
     colorScheme = getEnteColorScheme(context);
-    final bool isFamilyChildUser = _hasLoadedData &&
-        _userDetails.isPartOfFamily() &&
-        !_userDetails.isFamilyAdmin();
     if (!_isLoading) {
       _isLoading = true;
       _fetchSubData();
@@ -183,15 +180,13 @@ class _StoreSubscriptionPageState extends State<StoreSubscriptionPage> {
             Navigator.of(context).pop();
           },
         ),
-        title: isFamilyChildUser
-            ? null
-            : Text(
-                widget.isOnboarding
-                    ? AppLocalizations.of(context).chooseYourPlan
-                    : "${AppLocalizations.of(context).subscription}${kDebugMode ? ' Store' : ''}",
-                style: textTheme.largeBold,
-              ),
-        centerTitle: !isFamilyChildUser,
+        title: Text(
+          widget.isOnboarding
+              ? AppLocalizations.of(context).chooseYourPlan
+              : "${AppLocalizations.of(context).subscription}${kDebugMode ? ' Store' : ''}",
+          style: textTheme.largeBold,
+        ),
+        centerTitle: true,
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -199,9 +194,7 @@ class _StoreSubscriptionPageState extends State<StoreSubscriptionPage> {
           Expanded(child: _getBody()),
         ],
       ),
-      bottomNavigationBar: widget.isOnboarding &&
-              _hasLoadedData &&
-              !(_userDetails.isPartOfFamily() && !_userDetails.isFamilyAdmin())
+      bottomNavigationBar: widget.isOnboarding && _hasLoadedData
           ? Container(
               color: colorScheme.backgroundColour,
               child: SafeArea(
@@ -238,6 +231,19 @@ class _StoreSubscriptionPageState extends State<StoreSubscriptionPage> {
           await _userService.getUserDetailsV2(memoryCount: false);
       _userDetails = userDetails;
       _currentSubscription = userDetails.subscription;
+
+      if (_userDetails.isPartOfFamily() && !_userDetails.isFamilyAdmin()) {
+        if (mounted) {
+          replacePage(
+            context,
+            FamilyPlanPage(
+              initialUserDetails: _userDetails,
+              refreshOnOpen: false,
+            ),
+          );
+        }
+        return;
+      }
 
       _hasActiveSubscription = _currentSubscription!.isValid();
       _hideCurrentPlanSelection =
@@ -279,11 +285,7 @@ class _StoreSubscriptionPageState extends State<StoreSubscriptionPage> {
 
   Widget _getBody() {
     if (_hasLoadedData) {
-      if (_userDetails.isPartOfFamily() && !_userDetails.isFamilyAdmin()) {
-        return ChildSubscriptionWidget(userDetails: _userDetails);
-      } else {
-        return _buildPlans();
-      }
+      return _buildPlans();
     }
     return const EnteLoadingWidget();
   }
@@ -294,6 +296,7 @@ class _StoreSubscriptionPageState extends State<StoreSubscriptionPage> {
     if (hasYearlyPlans) {
       widgets.add(
         SubscriptionToggle(
+          isYearly: showYearlyPlan,
           onToggle: (p0) {
             showYearlyPlan = p0;
             _filterStorePlansForUi();
@@ -337,7 +340,7 @@ class _StoreSubscriptionPageState extends State<StoreSubscriptionPage> {
       } else {
         widgets.add(
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 40, 16, 4),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             child: MenuItemWidgetNew(
               title: AppLocalizations.of(context).managePaymentMethod,
               menuItemColor: colorScheme.fillFaint,
@@ -362,7 +365,7 @@ class _StoreSubscriptionPageState extends State<StoreSubscriptionPage> {
     if (!widget.isOnboarding) {
       widgets.add(
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 2, 16, 2),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           child: MenuItemWidgetNew(
             title: _isFreePlanUser()
                 ? AppLocalizations.of(context).familyPlans
@@ -374,8 +377,25 @@ class _StoreSubscriptionPageState extends State<StoreSubscriptionPage> {
               color: colorScheme.strokeBase,
             ),
             onTap: () async {
-              unawaited(
-                _billingService.launchFamilyPortal(context, _userDetails),
+              late final UserDetails userDetails;
+              try {
+                userDetails =
+                    await _userService.getUserDetailsV2(memoryCount: false);
+              } catch (error) {
+                if (!context.mounted) {
+                  return;
+                }
+                await showGenericErrorDialog(context: context, error: error);
+                return;
+              }
+              if (!context.mounted) {
+                return;
+              }
+              await _billingService.launchFamilyPortal(
+                context,
+                userDetails,
+                popOnFreeAdvertViewPlans: true,
+                refreshOnOpen: false,
               );
             },
           ),

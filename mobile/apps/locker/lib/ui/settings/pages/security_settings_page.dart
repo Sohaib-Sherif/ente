@@ -175,7 +175,7 @@ class _SecuritySettingsPageState extends State<SecuritySettingsPage> {
           GradientButton(
             text: context.l10n.contactSupport,
             onTap: () async {
-              await sendLogs(context, "support@ente.io", postShare: () {});
+              await sendLogs(context, "support@ente.com", postShare: () {});
             },
           ),
         ],
@@ -213,7 +213,7 @@ class _SecuritySettingsPageState extends State<SecuritySettingsPage> {
       await PasskeyService.instance.openPasskeyPage(buildContext);
     } catch (e, s) {
       _logger.severe("failed to open passkey page", e, s);
-      await showGenericErrorDialog(
+      await showGenericErrorBottomSheet(
         context: context,
         error: e,
       );

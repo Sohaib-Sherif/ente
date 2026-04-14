@@ -1,4 +1,5 @@
 import CloseIcon from "@mui/icons-material/Close";
+import LogoutOutlinedIcon from "@mui/icons-material/LogoutOutlined";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import {
     Avatar,
@@ -13,7 +14,8 @@ import {
     TextField,
     Typography,
 } from "@mui/material";
-import { ensureLocalUser } from "ente-accounts-rs/services/user";
+import { savedLocalUser } from "ente-accounts-rs/services/accounts-db";
+import { masterKeyFromSession } from "ente-accounts-rs/services/session-storage";
 import {
     OverflowMenu,
     OverflowMenuOption,
@@ -22,9 +24,15 @@ import { SidebarDrawer } from "ente-base/components/mui/SidebarDrawer";
 import { useBaseContext } from "ente-base/context";
 import { isHTTPErrorWithStatus } from "ente-base/http";
 import log from "ente-base/log";
+import {
+    ensureContactsReady,
+    useResolvedContactAvatar,
+    useResolvedContactDisplay,
+} from "ente-contacts-web";
 import { t } from "i18next";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
+    canLeaveCollection,
     canManageCollectionSharing,
     type LockerCollection,
     type LockerCollectionParticipant,
@@ -36,6 +44,7 @@ interface LockerCollectionShareDrawerProps {
     onClose: () => void;
     onShareCollection: (collectionID: number, email: string) => Promise<void>;
     onUnshareCollection: (collectionID: number, email: string) => Promise<void>;
+    onLeaveCollection: (collection: LockerCollection) => void;
     onRefreshSharees?: (
         collectionID: number,
     ) => Promise<LockerCollectionParticipant[]>;
@@ -51,10 +60,11 @@ export const LockerCollectionShareDrawer: React.FC<
     onClose,
     onShareCollection,
     onUnshareCollection,
+    onLeaveCollection,
     onRefreshSharees,
 }) => {
     const { showMiniDialog } = useBaseContext();
-    const currentUser = ensureLocalUser();
+    const currentUser = savedLocalUser() ?? { id: Number.NaN, email: "" };
     const [sharees, setSharees] = useState<LockerCollectionParticipant[]>([]);
     const [isRefreshingSharees, setIsRefreshingSharees] = useState(false);
     const [addViewerOpen, setAddViewerOpen] = useState(false);
@@ -69,6 +79,9 @@ export const LockerCollectionShareDrawer: React.FC<
         (collection?.owner.id === currentUser.id ? currentUser.email : "");
     const canManageParticipants = !!(
         collection && canManageCollectionSharing(collection, currentUser.id)
+    );
+    const canLeaveSharedCollection = !!(
+        collection && canLeaveCollection(collection, currentUser.id)
     );
 
     useEffect(() => {
@@ -119,6 +132,30 @@ export const LockerCollectionShareDrawer: React.FC<
             cancelled = true;
         };
     }, [collection, onRefreshSharees, open]);
+
+    useEffect(() => {
+        if (!open) {
+            return;
+        }
+
+        void (async () => {
+            try {
+                const masterKeyB64 = await masterKeyFromSession();
+                if (!masterKeyB64) {
+                    return;
+                }
+                await ensureContactsReady({
+                    userID: currentUser.id,
+                    masterKeyB64,
+                });
+            } catch (error) {
+                log.warn(
+                    "[LockerCollectionShareDrawer] Failed to warm contacts display cache",
+                    error,
+                );
+            }
+        })();
+    }, [currentUser.id, open]);
 
     const sortedSharees = useMemo(
         () =>
@@ -374,6 +411,7 @@ export const LockerCollectionShareDrawer: React.FC<
                                 sx={{
                                     minHeight: 48,
                                     borderRadius: "14px",
+                                    color: "#FFFFFF",
                                     background:
                                         "linear-gradient(135deg, #1071FF 0%, #0056CC 100%)",
                                     boxShadow:
@@ -389,6 +427,18 @@ export const LockerCollectionShareDrawer: React.FC<
                                 {t("addEmail")}
                             </Button>
                         )}
+
+                        {canLeaveSharedCollection && (
+                            <Button
+                                color="critical"
+                                variant="outlined"
+                                startIcon={<LogoutOutlinedIcon />}
+                                onClick={() => onLeaveCollection(collection)}
+                                sx={{ minHeight: 48, borderRadius: "14px" }}
+                            >
+                                {t("leaveCollection")}
+                            </Button>
+                        )}
                     </Stack>
                 </Stack>
             </SidebarDrawer>
@@ -399,9 +449,16 @@ export const LockerCollectionShareDrawer: React.FC<
                 fullWidth
                 maxWidth="xs"
             >
-                <DialogTitle>{t("addEmail")}</DialogTitle>
+                <DialogTitle
+                    sx={(theme) => ({
+                        ...theme.applyStyles("light", {}),
+                        color: "#FFFFFF",
+                    })}
+                >
+                    {t("addEmail")}
+                </DialogTitle>
                 <DialogContent>
-                    <Stack sx={{ gap: 2, py: 1 }}>
+                    <Stack sx={{ gap: 2, pt: 0.25, pb: 1 }}>
                         <TextField
                             type="email"
                             label={t("enterEmail")}
@@ -419,6 +476,36 @@ export const LockerCollectionShareDrawer: React.FC<
                                     void handleAddViewer();
                                 }
                             }}
+                            sx={(theme) => ({
+                                "& .MuiInputLabel-root": {
+                                    color: "rgba(255, 255, 255, 0.72)",
+                                },
+                                "& .MuiInputLabel-root.Mui-focused": {
+                                    color: "#FFFFFF",
+                                },
+                                "& .MuiInputBase-input": { color: "#FFFFFF" },
+                                "& .MuiFormHelperText-root": {
+                                    color: viewerEmailError
+                                        ? theme.vars.palette.critical.main
+                                        : "rgba(255, 255, 255, 0.64)",
+                                },
+                                ...theme.applyStyles("light", {
+                                    "& .MuiInputLabel-root": {
+                                        color: theme.vars.palette.text.muted,
+                                    },
+                                    "& .MuiInputLabel-root.Mui-focused": {
+                                        color: theme.vars.palette.text.base,
+                                    },
+                                    "& .MuiInputBase-input": {
+                                        color: theme.vars.palette.text.base,
+                                    },
+                                    "& .MuiFormHelperText-root": {
+                                        color: viewerEmailError
+                                            ? theme.vars.palette.critical.main
+                                            : theme.vars.palette.text.muted,
+                                    },
+                                }),
+                            })}
                         />
                         <Stack direction="row" sx={{ gap: 1 }}>
                             <Button
@@ -426,6 +513,12 @@ export const LockerCollectionShareDrawer: React.FC<
                                 color="secondary"
                                 onClick={handleCloseAddViewer}
                                 disabled={isSubmittingViewer}
+                                sx={(theme) => ({
+                                    color: "#FFFFFF",
+                                    ...theme.applyStyles("light", {
+                                        color: theme.vars.palette.text.base,
+                                    }),
+                                })}
                             >
                                 {t("cancel")}
                             </Button>
@@ -434,6 +527,7 @@ export const LockerCollectionShareDrawer: React.FC<
                                 variant="contained"
                                 onClick={() => void handleAddViewer()}
                                 disabled={isSubmittingViewer}
+                                sx={{ color: "#FFFFFF" }}
                             >
                                 {isSubmittingViewer
                                     ? t("sharing")
@@ -453,7 +547,19 @@ const ParticipantRow: React.FC<{
     action?: React.ReactNode;
 }> = ({ participant, subtitle, action }) => {
     const email = participant.email ?? t("unknownEmail");
-    const avatarLetter = email.charAt(0).toUpperCase() || "?";
+    const resolvedDisplay = useResolvedContactDisplay({
+        userID: participant.id,
+        email: participant.email,
+    });
+    const resolved = useResolvedContactAvatar({
+        userID: participant.id,
+        email: participant.email,
+    });
+    const label = resolvedDisplay.primaryLabel || email;
+    const initial =
+        resolved.source === "contact"
+            ? resolved.initial
+            : email.charAt(0).toUpperCase() || "?";
 
     return (
         <Stack
@@ -474,12 +580,13 @@ const ParticipantRow: React.FC<{
                     bgcolor: theme.vars.palette.fill.faintHover,
                     color: "text.base",
                 })}
+                src={resolved.avatarURL}
             >
-                {avatarLetter}
+                {initial}
             </Avatar>
             <Box sx={{ flex: 1, minWidth: 0 }}>
                 <Typography variant="body" sx={{ fontWeight: "medium" }} noWrap>
-                    {email}
+                    {label}
                 </Typography>
                 {subtitle && (
                     <Typography

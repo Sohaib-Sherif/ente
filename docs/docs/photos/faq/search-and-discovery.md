@@ -130,6 +130,20 @@ Open `Settings > Preferences > Machine learning` and toggle ON face recognition 
 - ✅ ML only works on desktop and mobile apps
 - Initial indexing can take time depending on library size
 
+### Why aren't faces appearing on mobile even though ML is fully indexed on desktop? {#faces-not-syncing-to-mobile}
+
+If ML indexing shows 100% on desktop but faces aren't showing up on your mobile app, try clearing the app's cache and storage, then log back in and allow a few minutes for the face data to sync.
+
+**On Android:**
+
+Open device `Settings > Apps > Ente Photos > Storage`, then tap **Clear cache** and **Clear storage**. Log back in and wait a few minutes.
+
+**On iOS:**
+
+Delete and reinstall the app, then log back in and wait a few minutes.
+
+Faces should start appearing shortly after logging back in.
+
 ### Why is the People section empty even though Machine Learning shows 100%? {#people-section-empty}
 
 If Machine Learning shows 100% on both Android and Desktop, the People
@@ -231,6 +245,12 @@ Please note this functionality is currently only available on mobile.
 ### Does face recognition work offline? {#ml-offline}
 
 Yes! Once your photos have been indexed, face recognition and magic search work completely offline. The initial indexing requires downloading your photos (which happens faster over WiFi), but after that all searches happen locally on your device. The indexes are synced across your devices using end-to-end encryption.
+
+### Does ML indexing require internet? {#ml-indexing-internet}
+
+ML indexing requires internet initially to download the ML models and to download any photos not already present locally on your device. Once your photos have been indexed completely, face recognition and magic search work completely offline.
+
+Internet is also required to sync the encrypted indexes across your devices.
 
 ### Is my face data used to train AI models? {#face-data-training}
 

@@ -1,6 +1,16 @@
 Latest changes:
-- Ashil: Stop showing unknown user avatar on shared albums opened via deeplinking
-- Ashil: Fix album sorting state not persisting
+- Amrithesh: Improve zoomed OCR selection UX in the photo viewer
+- Neeraj: Fix dedupe cleanup progress percentage display
+- Neeraj: Fix Added by visibility in file details
+- Neeraj: Contacts
+- Neeraj: Fix grey screen when collections search result is empty
+- Ashil: Fix app going blank on iOS on deleting all empty albums
+- Ashil: Show family dashboard for family non-admin members too
+- Ashil: Updated 'ente' branding
+- Ashil, Laurens: Fix file download not working for files with stale localID references
+- Ashil: Bug fixes and improvements on Gallery
+- Manav: Update flutter_sodium to reproducible libsodium 1.0.21 Android/iOS binaries
+
 
 Still behind internal flag:
 - Amrithesh: (I) ML/Pet recognition [Indexing]
@@ -11,4 +21,5 @@ Still behind internal flag:
 - Laurens: (I) Use cloudflare worker for upload for internal users
 - Neeraj: (I) Add internal-only resumable gallery download queue with persistence/restart fixes and completion banner updates
 - Prateek: (i) Enable BG sync notifications by default for internal users on iOS
+- Prateek: (i) Add internal sync recovery diagnostics to classify local discovery vs remote upload-prep misses
 - Prateek: Background sync now short-circuits upload prep on mobile data when "Backup over mobile data" is disabled

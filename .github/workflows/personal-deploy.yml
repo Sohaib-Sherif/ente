@@ -29,8 +29,13 @@ jobs:
                   cache: "yarn"
                   cache-dependency-path: "web/yarn.lock"
 
+            - name: Activate Yarn 1.22.22
+              run: |
+                  corepack enable
+                  corepack prepare yarn@1.22.22 --activate
+
             - name: Install dependencies
-              run: yarn install
+              run: yarn install --frozen-lockfile
 
             - name: Build photos
               run: yarn build:photos

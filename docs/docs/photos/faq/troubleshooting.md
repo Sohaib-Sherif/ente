@@ -64,7 +64,7 @@ If a specific video keeps failing:
 1. Check your network connection is stable
 2. Make sure you're not running out of storage quota
 3. Try uploading via WiFi instead of mobile data
-4. Contact [support@ente.io](mailto:support@ente.io) with debug logs (see [How to share logs](#sharing-logs))
+4. Contact [support@ente.com](mailto:support@ente.com) with debug logs (see [How to share logs](#sharing-logs))
 
 ### Why does the app crash when watching videos or using ML? {#app-crashes-ml-video}
 
@@ -120,7 +120,7 @@ If your photos or videos aren't uploading to Ente, try these troubleshooting ste
 - Ente supports all `image/*` and `video/*` file types
 - RAW format support is currently limited
 - Files larger than 10 GB cannot be uploaded
-- If a valid file isn't uploading, contact [support@ente.io](mailto:support@ente.io)
+- If a valid file isn't uploading, contact [support@ente.com](mailto:support@ente.com)
 
 ### Why does upload show "Waiting to upload"? {#waiting-to-upload}
 
@@ -134,7 +134,7 @@ This usually indicates a network connectivity issue:
 
 ### Why are uploads failing on desktop or web? {#faster-uploads}
 
-We use a Cloudflare proxy to speed up uploads ([blog post](https://ente.io/blog/tech/making-uploads-faster/)). However, in some network configurations (depending on your ISP) this might prevent uploads from going through.
+We use a Cloudflare proxy to speed up uploads ([blog post](https://ente.com/blog/tech/making-uploads-faster/)). However, in some network configurations (depending on your ISP) this might prevent uploads from going through.
 
 **Solution:**
 
@@ -154,7 +154,7 @@ When files fail to download, a modal dialog appears showing the failed downloads
 
 The desktop/web app tries to detect if a particular file is a video or image. If the detection fails, the app skips the upload.
 
-**Solution:** Contact [support@ente.io](mailto:support@ente.io) if you find that a valid image or video file was not detected and uploaded. Include:
+**Solution:** Contact [support@ente.com](mailto:support@ente.com) if you find that a valid image or video file was not detected and uploaded. Include:
 
 - The file extension (e.g., .jpg, .mp4)
 - The file's MIME type if you know it
@@ -206,6 +206,22 @@ If you've granted permission but Ente still can't access photos, try:
 - Revoking and re-granting the permission
 - Reinstalling the app (your backed-up photos are safe in the cloud)
 
+### Why is the app looping saying it is preserving one memory when all memories seem to be backed up? {#app-looping-preserving-one-memory}
+
+If the app shows it is preserving one photo or memory but never completes, the file is likely stuck in a retry loop.
+
+Share debug logs with [support@ente.io](mailto:support@ente.io) so we can identify the specific file. Open `Settings > Help & Support > Export logs` and attach to email.
+
+A common cause on iOS is that "Optimize iPhone Storage" is enabled and the original file has not been downloaded from iCloud to your device.
+
+To fix this:
+
+1. Open your iOS Photos app and find the stuck photo or video.
+2. Open it and let it fully load (or play, if it is a Live Photo or video). This forces iOS to download the original from iCloud.
+3. Once fully loaded, open Ente and keep it in the foreground on WiFi. The upload should complete shortly.
+
+If the photo won't load in your Photos app either, the file may be corrupted or inaccessible on iCloud's end.
+
 ## Desktop App Issues
 
 ### Why does my desktop app crash during large uploads? {#desktop-large-uploads}
@@ -248,9 +264,12 @@ Ente will automatically skip files that have already been uploaded, so you can d
 
 If the browser settings cannot be changed, we recommend uploading files through the desktop app.
 
-### Why do I get "system error number 13" during ML indexing on Windows? {#windows-ml-indexing-error-13}
+### Why does desktop ML show "Indexing: Error" on Windows? {#windows-ml-indexing-error-13}
 
-If you see "system error number 13" errors in your logs during ML indexing, this is usually caused by Windows roaming profiles preventing access to the ML model files in `%APPDATA%\ente\models\`.
+If the desktop app shows `Indexing: Error` in `Settings > Preferences > Machine learning`, this is usually caused by Windows roaming profiles preventing access to the ML model files in
+`%APPDATA%\ente\models\`.
+
+If you check the logs, you might also see `system error number 13` during ML indexing.
 
 **Solution:**
 
@@ -351,7 +370,7 @@ If you purchased a subscription through the iOS App Store but the app shows "Ple
 - Avoid App Store's 30% fee
 - Better refund and support options
 
-If you continue experiencing issues after purchasing from the web, contact [support@ente.io](mailto:support@ente.io).
+If you continue experiencing issues after purchasing from the web, contact [support@ente.com](mailto:support@ente.com).
 
 ### Why is my Android app stuck on the splash screen? {#android-splash-freeze}
 
@@ -374,7 +393,7 @@ Open device `Settings > Apps > Ente > Storage` and tap "Clear cache" (NOT "Clear
 3. Log back in
 4. Your backed-up photos are safe in the cloud
 
-**Note**: This is a known issue being investigated by our team. If none of these solutions work, please contact [support@ente.io](mailto:support@ente.io) with your device model and Android version.
+**Note**: This is a known issue being investigated by our team. If none of these solutions work, please contact [support@ente.com](mailto:support@ente.com) with your device model and Android version.
 
 ### Why is the Linux desktop app still showing the old icon after updating? {#linux-icon-update}
 
@@ -465,7 +484,7 @@ Mobile browsers cannot handle the computationally intensive password derivation 
 
 2. **Use a desktop or laptop computer**:
     - web.ente.io works on desktop browsers (Chrome, Firefox, Safari, Edge)
-    - Or install the [desktop app](https://ente.io/download/desktop)
+    - Or install the [desktop app](https://ente.com/download/desktop)
 
 **Feature differences:**
 
@@ -474,6 +493,12 @@ Mobile browsers on web.ente.io are not supported. Use native apps for the best e
 - ✅ Mobile apps: Full features including ML, search, video streaming
 - ✅ Desktop/laptop web: Most features (no ML)
 - ❌ Mobile web browsers: Not supported
+
+### Why can I see my photos in the app but not in the browser? {#photos-visible-app-not-browser}
+
+If photos appear in the mobile or desktop app but not on web.ente.io, try logging out and logging back in on the browser. This clears any stale session data and refreshes your library view.
+
+You can also try opening web.ente.io in an incognito or private window to rule out browser caching issues.
 
 ### How do I identify which files failed to upload? {#identify-failed-uploads}
 
@@ -532,6 +557,7 @@ Machine learning features (face recognition and magic search) require downloadin
 - Enable ML on desktop first (faster processor)
 - Use WiFi for initial indexing
 - Keep the app open and in the foreground
+- If stuck or slow, keep the app open on the 'Machine Learning' page
 - Once indexed on one device, the indexes sync to other devices
 
 Learn more in [Search and Discovery FAQ](/photos/faq/search-and-discovery#ml-offline).
@@ -577,10 +603,10 @@ Open `Settings > Support > Help` to view logs location, then go back to `Setting
 
 **On web:**
 
-Open `Settings > Support > Help` to download logs, then email the downloaded logs to [support@ente.io](mailto:support@ente.io).
+Open `Settings > Support > Help` to download logs, then email the downloaded logs to [support@ente.com](mailto:support@ente.com).
 
 **Email manually:**
-If the automatic email doesn't work, send logs directly to [support@ente.io](mailto:support@ente.io) with:
+If the automatic email doesn't work, send logs directly to [support@ente.com](mailto:support@ente.com) with:
 
 - Your platform (iOS, Android, Desktop, Web)
 - Description of the issue
@@ -590,8 +616,8 @@ If the automatic email doesn't work, send logs directly to [support@ente.io](mai
 ### Where can I get help? {#get-help}
 
 1. **Check the FAQ sections** for answers to common questions
-2. **Join our [Discord community](https://ente.io/discord)** for community support
-3. **Email us at [support@ente.io](mailto:support@ente.io)** with details about your issue
+2. **Join our [Discord community](https://ente.com/discord)** for community support
+3. **Email us at [support@ente.com](mailto:support@ente.com)** with details about your issue
 4. **Report bugs on [GitHub](https://github.com/ente-io/ente/issues)** if you've found a technical issue
 
-For security vulnerabilities, please email [security@ente.io](mailto:security@ente.io) directly.
+For security vulnerabilities, please email [security@ente.com](mailto:security@ente.com) directly.

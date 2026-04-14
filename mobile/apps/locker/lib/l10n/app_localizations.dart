@@ -270,6 +270,48 @@ abstract class AppLocalizations {
   /// **'Downloading... {percentage}%'**
   String downloadingProgress(int percentage);
 
+  /// No description provided for @saveOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'Save offline'**
+  String get saveOffline;
+
+  /// No description provided for @unsave.
+  ///
+  /// In en, this message translates to:
+  /// **'Unsave'**
+  String get unsave;
+
+  /// No description provided for @savingOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving offline...'**
+  String get savingOffline;
+
+  /// Success message when files are saved offline
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 file saved offline} other{{count} files saved offline}}'**
+  String filesAvailableOffline(int count);
+
+  /// Partial success message for offline save
+  ///
+  /// In en, this message translates to:
+  /// **'{successCount, plural, =1{Saved 1 file offline} other{Saved {successCount} files offline}}, {failureCount, plural, =1{1 failed} other{{failureCount} failed}}'**
+  String filesAvailableOfflinePartial(int successCount, int failureCount);
+
+  /// Failure message when files could not be saved offline
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Failed to save 1 file offline} other{Failed to save {count} files offline}}'**
+  String failedToSaveFilesOffline(int count);
+
+  /// Success message when offline copies are removed
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 file removed from offline} other{{count} files removed from offline}}'**
+  String filesRemovedFromOffline(int count);
+
   /// No description provided for @downloadFailed.
   ///
   /// In en, this message translates to:
@@ -1590,6 +1632,12 @@ abstract class AppLocalizations {
   /// **'Manage link'**
   String get manageLink;
 
+  /// No description provided for @linkLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Link'**
+  String get linkLabel;
+
   /// No description provided for @linkExpiry.
   ///
   /// In en, this message translates to:
@@ -1947,7 +1995,7 @@ abstract class AppLocalizations {
   /// No description provided for @shareTextRecommendUsingEnte.
   ///
   /// In en, this message translates to:
-  /// **'Download Ente\n\nhttps://ente.io'**
+  /// **'Download Ente\n\nhttps://ente.com'**
   String get shareTextRecommendUsingEnte;
 
   /// No description provided for @thisIsYourVerificationId.
@@ -1995,13 +2043,13 @@ abstract class AppLocalizations {
   /// No description provided for @shareMyVerificationID.
   ///
   /// In en, this message translates to:
-  /// **'Here\'s my verification ID: {verificationID} for ente.io.'**
+  /// **'Here\'s my verification ID: {verificationID} for ente.com.'**
   String shareMyVerificationID(Object verificationID);
 
   /// No description provided for @shareTextConfirmOthersVerificationID.
   ///
   /// In en, this message translates to:
-  /// **'Hey, can you confirm that this is your ente.io verification ID: {verificationID}'**
+  /// **'Hey, can you confirm that this is your ente.com verification ID: {verificationID}'**
   String shareTextConfirmOthersVerificationID(Object verificationID);
 
   /// No description provided for @passwordLock.
@@ -2754,6 +2802,12 @@ abstract class AppLocalizations {
   /// **'Shared with'**
   String get sharedWith;
 
+  /// No description provided for @shareCollection.
+  ///
+  /// In en, this message translates to:
+  /// **'Share collection'**
+  String get shareCollection;
+
   /// No description provided for @shareLater.
   ///
   /// In en, this message translates to:
@@ -3083,6 +3137,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Please authenticate to view your active sessions'**
   String get authToViewYourActiveSessions;
+
+  /// No description provided for @deleteAccountFeedbackPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Something not working? Reach out at {email}, we\'d love to help.'**
+  String deleteAccountFeedbackPrompt(String email);
+
+  /// No description provided for @sendFeedback.
+  ///
+  /// In en, this message translates to:
+  /// **'Send feedback'**
+  String get sendFeedback;
+
+  /// No description provided for @deleteAccountPermanentWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'This will permanently delete your Ente Auth, Photos, and Locker data'**
+  String get deleteAccountPermanentWarning;
 }
 
 class _AppLocalizationsDelegate

@@ -786,7 +786,10 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
     }
     if (flagService.internalUser) {
       try {
-        await galleryDownloadQueueService.enqueueFiles(files);
+        await galleryDownloadQueueService.enqueueFiles(
+          files,
+          persistToFilesDB: false,
+        );
       } catch (e, s) {
         _logger.severe("Failed to download album", e, s);
         await showGenericErrorDialog(context: context, error: e);
@@ -804,7 +807,7 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
 
     try {
       for (var i = 0; i < files.length; i++) {
-        await downloadToGallery(files[i]);
+        await downloadToGallery(files[i], persistToFilesDB: false);
         dialog.update(message: "Downloading... ${i + 1}/$totalFiles");
       }
     } catch (e, s) {
@@ -1243,6 +1246,7 @@ class _GalleryAppBarWidgetState extends State<GalleryAppBarWidget> {
           collectionFiles,
           0,
           "guest_view",
+          galleryType: galleryType,
         ),
       );
       await localSettings.setOnGuestView(true);

@@ -63,6 +63,7 @@ Google Takeout does not reliably export shared albums:
 - Shared albums you own may appear in Takeout and may export as a folder, but not consistently. Some photos may be missing, folders may be split, or the album might not be recreated at all.
 - Shared albums you joined (someone else owns) do not export unless you manually added each photo to your own library.
 - Shared-album names or structure are not preserved in the metadata, hence the shared album cannot be automatically reconstructed.
+- Metadata regarding who shared the photo with you will not be present.
 
 The best way to export shared albums is to manually download each shared album:
 
@@ -98,6 +99,16 @@ Photos automatically move to Uncategorized in these situations:
 **When deleting from watched folders**: On desktop, if you delete a file from a folder being watched by Ente, the corresponding photo in Ente moves to Uncategorized (it's not permanently deleted).
 
 **Note**: Photos uploaded by others (from shared albums) do not go to Uncategorized when removed.
+
+### If all my photos are in Uncategorized, how do I move them to resemble the local album structure I have on my device? {#move-uncategorized-to-albums}
+
+If your photos are in Uncategorized instead of their original albums, you can reorganize them manually:
+
+1. Open **On device**, go to an album, select all photos, and add them to the corresponding album in Ente.
+2. Repeat for each album.
+3. Open Uncategorized, tap the three dots menu, and select **Clean up Uncategorized**. This removes any photos from Uncategorized that now exist in another album.
+
+Alternatively, if you have the original photos on your device, you can delete them from Uncategorized and re-upload them via **Backup folders** on mobile.
 
 ### How do I clean up Uncategorized items? {#clean-uncategorized}
 
@@ -330,7 +341,7 @@ If you accidentally deleted photos, you can restore them from Trash within 30 da
 - Select the items to restore
 - Click the "Restore" button
 
-Restored photos will be moved back to their original albums.
+Restored photos will be moved to an album of choice.
 
 ### How do I permanently delete photos or empty trash? {#empty-trash}
 
@@ -439,7 +450,7 @@ You may not be able to delete photos if:
 
 If you're an admin or owner and want to remove photos that others uploaded, you can remove them from the album or use [suggest deletion](/photos/faq/sharing-and-collaboration#suggest-deletion).
 
-If you still can't delete photos you own, contact [support@ente.io](mailto:support@ente.io).
+If you still can't delete photos you own, contact [support@ente.com](mailto:support@ente.com).
 
 ### How is Uncategorized different from Trash? {#uncategorized-vs-trash}
 

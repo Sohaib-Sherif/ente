@@ -34,7 +34,9 @@ enum PeopleSortKey {
 enum OfflineFlag {
   mlConsent,
   mapEnabled,
-  getStartedBannerDismissed,
+  // Reserved: previously getStartedBannerDismissed. Kept to preserve bit
+  // positions of subsequent flags in the stored bitmap.
+  reservedGetStartedBannerDismissed,
   facesBannerDismissed,
   nameFaceBannerDismissed,
   seenMLEnablingBanner,
@@ -88,11 +90,16 @@ class LocalSettings {
       "ml_debug.default_clustering_distance";
   static const _kRunMLDuringInteractionOverride =
       "ml_debug.run_ml_during_interaction";
+  static const _kSemanticSearchExactInRustEnabled =
+      "ml_debug.semantic_search_exact_in_rust";
   static const _kAppMode = "ls.app_mode";
   static const _kShowOfflineModeOption = "ls.show_offline_mode_option";
 
   static const _kOfflineFlags = "ls.offline_flags";
   static const _kOfflineMapEnabled = "ls.offline_map_enabled";
+  static const _kOfflineGetStartedBannerDismissedAt =
+      "ls.offline_get_started_banner_dismissed_at";
+  static const _kOfflineGetStartedBannerDismissDuration = Duration(days: 7);
 
   final SharedPreferences _prefs;
 
@@ -256,11 +263,17 @@ class LocalSettings {
     await _setFlag(OfflineFlag.mapEnabled, value);
   }
 
+  String get _mlLocalIndexingKey => appMode == AppMode.offline
+      ? _kOfflineMLLocalIndexingEnabled
+      : _kisMLLocalIndexingEnabled;
+
+  bool get _defaultMLLocalIndexingEnabled => appMode == AppMode.offline
+      ? enoughRamForOfflineLocalIndexing
+      : enoughRamForLocalIndexing;
+
   bool get isMLLocalIndexingEnabled {
-    final key = appMode == AppMode.offline
-        ? _kOfflineMLLocalIndexingEnabled
-        : _kisMLLocalIndexingEnabled;
-    return _prefs.getBool(key) ?? enoughRamForLocalIndexing;
+    return _prefs.getBool(_mlLocalIndexingKey) ??
+        _defaultMLLocalIndexingEnabled;
   }
 
   bool get isSmartMemoriesEnabled =>
@@ -302,6 +315,13 @@ class LocalSettings {
     await _prefs.setBool(_kRunMLDuringInteractionOverride, value);
   }
 
+  bool get semanticSearchExactInRustEnabled =>
+      _prefs.getBool(_kSemanticSearchExactInRustEnabled) ?? false;
+
+  Future<void> setSemanticSearchExactInRustEnabled(bool value) async {
+    await _prefs.setBool(_kSemanticSearchExactInRustEnabled, value);
+  }
+
   Future<bool> setSmartMemories(bool value) async {
     await _prefs.setBool(kCuratedMemoriesEnabled, value);
     return value;
@@ -333,11 +353,9 @@ class LocalSettings {
 
   /// toggleFaceIndexing toggles the face indexing setting and returns the new value
   Future<bool> toggleLocalMLIndexing() async {
-    final key = appMode == AppMode.offline
-        ? _kOfflineMLLocalIndexingEnabled
-        : _kisMLLocalIndexingEnabled;
-    final nextValue = !(_prefs.getBool(key) ?? enoughRamForLocalIndexing);
-    await _prefs.setBool(key, nextValue);
+    final nextValue = !(_prefs.getBool(_mlLocalIndexingKey) ??
+        _defaultMLLocalIndexingEnabled);
+    await _prefs.setBool(_mlLocalIndexingKey, nextValue);
     return nextValue;
   }
 
@@ -455,10 +473,6 @@ class LocalSettings {
     return cutoff;
   }
 
-  Future<void> clearSharedPhotoFeedCutoffTime() async {
-    await _prefs.remove(_kSharedPhotoFeedCutoffTime);
-  }
-
   int wrapped2025ResumeIndex() {
     return _prefs.getInt(_kWrapped2025ResumeIndex) ?? 0;
   }
@@ -515,11 +529,24 @@ class LocalSettings {
     await _prefs.setBool(_kShowOfflineModeOption, value);
   }
 
-  bool get isOfflineGetStartedBannerDismissed =>
-      _getFlag(OfflineFlag.getStartedBannerDismissed);
+  bool get isOfflineGetStartedBannerDismissed {
+    final dismissedAtMs =
+        _prefs.getInt(_kOfflineGetStartedBannerDismissedAt) ?? 0;
+    if (dismissedAtMs == 0) return false;
+    final elapsed = DateTime.now().millisecondsSinceEpoch - dismissedAtMs;
+    return elapsed >= 0 &&
+        elapsed < _kOfflineGetStartedBannerDismissDuration.inMilliseconds;
+  }
 
-  Future<void> setOfflineGetStartedBannerDismissed(bool value) =>
-      _setFlag(OfflineFlag.getStartedBannerDismissed, value);
+  Future<void> setOfflineGetStartedBannerDismissed(bool value) {
+    if (value) {
+      return _prefs.setInt(
+        _kOfflineGetStartedBannerDismissedAt,
+        DateTime.now().millisecondsSinceEpoch,
+      );
+    }
+    return _prefs.remove(_kOfflineGetStartedBannerDismissedAt);
+  }
 
   bool get isMLProgressBannerDismissed =>
       _getFlag(OfflineFlag.mlProgressBannerDismissed);
